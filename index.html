@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Odómetros - Flota de Buses PRO</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Librerías Externas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --sidebar-width: 300px;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        .dark body {
+            background-color: #020617; /* slate-950 */
+        }
+        .main-content {
+            transition: margin-left 0.3s ease-in-out;
+        }
+        @media (min-width: 1024px) {
+            .main-content {
+                margin-left: var(--sidebar-width);
+            }
+        }
+        .sidebar {
+            width: var(--sidebar-width);
+            transition: transform 0.3s ease-in-out;
+        }
+        .sidebar-hidden {
+            transform: translateX(-100%);
+        }
+        .loader {
+            border-top-color: #3b82f6; /* blue-500 */
+            animation: spinner 1.5s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .notification {
+            transition: all 0.5s ease-in-out;
+        }
+        .notification.show {
+            transform: translateX(0) !important;
+            opacity: 1 !important;
+        }
+        /* Estilos para scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #94a3b8; /* slate-400 */
+            border-radius: 3px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569; /* slate-600 */
+        }
+    </style>
+</head>
+<body class="dark:text-slate-300">
+
+    <!-- Sidebar (Panel de Buses Pendientes) -->
+    <aside id="sidebar" class="sidebar bg-white dark:bg-slate-900 h-full fixed top-0 left-0 z-40 flex flex-col border-r border-gray-200 dark:border-slate-800 sidebar-hidden lg:transform-none">
+        <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-800 h-16">
+             <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-sky-600 dark:text-sky-400">
+                    <path d="M3.375 4.5C2.339 4.5 1.5 5.34 1.5 6.375V13.5h12V6.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM13.5 15h-12v2.625c0 1.035.84 1.875 1.875 1.875h.375a3 3 0 116 0h3a.75.75 0 00.75-.75V15z" /><path d="M8.25 19.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0zM15.75 6.75a.75.75 0 00-.75.75v11.25c0 .087.015.17.042.248a3 3 0 015.958.464c.853-.175 1.522-.935 1.464-1.883a18.659 18.659 0 00-3.732-10.104 1.837 1.837 0 00-1.47-.725H15.75z" /><path d="M19.5 19.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" />
+                </svg>
+                <span class="ml-2 text-xl font-semibold">Control Odómetros</span>
+            </div>
+        </div>
+        <div class="p-4">
+            <h3 class="text-lg font-bold text-amber-600 dark:text-amber-500">Buses Pendientes Hoy (<span id="pending-count">0</span>)</h3>
+            <div class="relative mt-2">
+                <input type="text" id="pending-search" placeholder="Buscar PPU..." class="w-full p-2 pl-8 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+            </div>
+        </div>
+        <div id="pending-list-container" class="flex-grow overflow-y-auto custom-scrollbar px-4 space-y-2">
+            <!-- La lista de buses pendientes se renderizará aquí -->
+        </div>
+        <div class="p-4 border-t border-gray-200 dark:border-slate-800 text-xs text-gray-400">
+            <p>&copy; 2024 - Sistema de Gestión de Flota</p>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <!-- Header Principal -->
+        <header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm sticky top-0 z-20 border-b border-gray-200 dark:border-slate-800">
+            <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+                <button id="sidebar-toggle" class="lg:hidden p-2 rounded-md text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                </button>
+                <div class="flex-1"></div>
+                <div class="flex items-center space-x-4">
+                    <button id="dark-mode-toggle" class="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800">
+                        <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    </button>
+                    <div class="w-px h-8 bg-slate-200 dark:bg-slate-700"></div>
+                    <div class="text-right">
+                        <p class="font-semibold">Operador</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">En Terreno</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenido -->
+        <main class="p-4 sm:p-6 lg:p-8">
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div class="lg:col-span-2">
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-bold mb-6">Nuevo Registro</h2>
+                        <form id="odometer-form" class="space-y-6">
+                            <div class="relative">
+                                <label for="ppu-input" class="block text-sm font-medium mb-1">PPU del Bus</label>
+                                <input type="text" id="ppu-input" name="ppu" required placeholder="Digite PPU..." autocomplete="off" class="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 uppercase placeholder:normal-case">
+                                <div id="autocomplete-list" class="absolute z-10 w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg mt-1 max-h-40 overflow-y-auto hidden shadow-lg"></div>
+                                <div id="ppu-alert" class="hidden mt-2 p-3 text-sm rounded-lg"></div>
+                            </div>
+                            <div>
+                                <label for="odometer" class="block text-sm font-medium mb-1">Odómetro (km)</label>
+                                <input type="number" id="odometer" name="odometer" required placeholder="Ej: 125480" class="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500">
+                                <p id="last-odometer-info" class="text-xs text-slate-500 mt-1 hidden">Último registro: <span class="font-semibold"></span></p>
+                            </div>
+                            <div>
+                                <label for="image-upload" class="block text-sm font-medium mb-1">Fotografía</label>
+                                <input type="file" id="image-upload" name="image" accept="image/*" required class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-sky-100 file:text-sky-700 hover:file:bg-sky-200 dark:file:bg-slate-700 dark:file:text-sky-300 dark:hover:file:bg-slate-600">
+                            </div>
+                            <div>
+                                <label for="analysis" class="block text-sm font-medium mb-1">Análisis y Observaciones</label>
+                                <textarea id="analysis" name="analysis" rows="3" placeholder="Anotaciones..." class="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500"></textarea>
+                            </div>
+                            <div class="border-t dark:border-slate-700 pt-4 text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                                <p><strong>Fecha y Hora:</strong> <span id="current-datetime">...</span></p>
+                                <p><strong>Ubicación:</strong> <span id="current-location">...</span></p>
+                                <p><strong>Terminal más cercana:</strong> <span id="nearest-terminal">...</span></p>
+                            </div>
+                            <div class="pt-3">
+                                <button type="submit" id="submit-btn" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-all flex items-center justify-center disabled:bg-slate-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed">
+                                    <span id="submit-text">Registrar Revisión</span>
+                                    <div id="submit-loader" class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-6 w-6 ml-3 hidden"></div>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="lg:col-span-3">
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-lg">
+                        <div class="flex flex-col md:flex-row justify-between items-center mb-4">
+                            <h2 class="text-2xl font-bold">Registros del Día</h2>
+                            <button id="download-excel-btn" class="mt-4 md:mt-0 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg shadow-md flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                Descargar Excel
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs uppercase bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">PPU</th>
+                                        <th scope="col" class="px-6 py-3">Odómetro</th>
+                                        <th scope="col" class="px-6 py-3">Hora</th>
+                                        <th scope="col" class="px-6 py-3">Ubicación</th>
+                                        <th scope="col" class="px-6 py-3 text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="records-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Overlay para sidebar en móvil -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden"></div>
+    
+    <!-- Notificación -->
+    <div id="notification" class="fixed top-5 right-5 w-full max-w-sm z-50 transform translate-x-[120%] opacity-0"></div>
+
+    <!-- Modal para ver la imagen -->
+    <div id="image-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 hidden z-50 opacity-0 transition-opacity duration-300">
+        <div class="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden">
+            <div class="md:w-3/5 bg-black flex items-center justify-center">
+                 <img id="modal-img" src="" alt="Fotografía del Odómetro" class="max-w-full max-h-[50vh] md:max-h-[90vh] object-contain">
+            </div>
+            <div class="md:w-2/5 p-6 flex flex-col">
+                <div class="flex-grow space-y-4 overflow-y-auto custom-scrollbar pr-2">
+                    <h3 class="text-xl font-bold">Detalles del Registro</h3>
+                    <div id="modal-details" class="space-y-3 text-sm"></div>
+                </div>
+                <div class="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
+                     <button id="close-modal-btn" class="w-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 font-bold py-2 px-4 rounded-lg">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // --- CONFIGURACIÓN ---
+        const SUPABASE_URL = 'https://tcmtxvuucjttngcazgff.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjbXR4dnV1Y2p0dG5nY2F6Z2ZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA3MjUwMDEsImV4cCI6MjA1NjMwMTAwMX0.2WcIjMUEhSM6j9kYpbsYArQocZdHx86k7wXk-NyjIs0';
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- ESTADO DE LA APP ---
+        let userLocation = null, allBuses = [], historicRecords = [], selectedBusId = null;
+        
+        // --- INICIALIZACIÓN ---
+        document.addEventListener('DOMContentLoaded', initialize);
+
+        async function initialize() {
+            console.log("🚀 App v3.2 Estable Iniciada");
+            setupUI();
+            updateDateTime();
+            setInterval(updateDateTime, 60000);
+            getGeolocation();
+            // CORRECCIÓN: Cargar buses primero, luego los registros para evitar race condition.
+            await fetchBuses();
+            await fetchRecords();
+            setupEventListeners();
+            setupRealtimeSubscriptions();
+        }
+
+        function setupUI() {
+            const isDark = localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            document.documentElement.classList.toggle('dark', isDark);
+            document.getElementById('light-icon').classList.toggle('hidden', isDark);
+            document.getElementById('dark-icon').classList.toggle('hidden', !isDark);
+        }
+
+        function setupEventListeners() {
+            document.getElementById('odometer-form').addEventListener('submit', handleFormSubmit);
+            document.getElementById('download-excel-btn').addEventListener('click', downloadDataAsExcel);
+            document.getElementById('close-modal-btn').addEventListener('click', () => document.getElementById('image-modal').classList.add('hidden', 'opacity-0'));
+            document.getElementById('image-modal').addEventListener('click', (e) => { if (e.target === document.getElementById('image-modal')) document.getElementById('close-modal-btn').click(); });
+            document.getElementById('dark-mode-toggle').addEventListener('click', toggleDarkMode);
+            document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
+            document.getElementById('sidebar-overlay').addEventListener('click', toggleSidebar);
+            document.getElementById('ppu-input').addEventListener('input', handlePpuInput);
+            document.getElementById('ppu-input').addEventListener('blur', () => setTimeout(() => document.getElementById('autocomplete-list').classList.add('hidden'), 200));
+            document.getElementById('ppu-input').addEventListener('focus', handlePpuInput);
+            document.getElementById('pending-search').addEventListener('input', (e) => updatePendingList(e.target.value));
+        }
+
+        // --- DATOS (SUPABASE) ---
+        async function fetchBuses() {
+            try {
+                const { data, error } = await supabaseClient.from('buses').select('id, ppu, numero_interno, marca').order('numero_interno');
+                if (error) throw error;
+                allBuses = data;
+                updateStatistics();
+            } catch (error) {
+                console.error('Error fetching buses:', error);
+                showNotification('error', 'Error de Flota', 'No se pudo cargar la lista de buses.');
+            }
+        }
+
+        async function fetchRecords() {
+            try {
+                const today = new Date().toISOString().slice(0, 10);
+                const { data, error } = await supabaseClient.from('odometro_registros').select(`*, buses (ppu, numero_interno)`).eq('fecha_registro', today).order('created_at', { ascending: false });
+                if (error) throw error;
+                historicRecords = data;
+                renderRecordsTable(data);
+                updatePendingList();
+                updateStatistics();
+            } catch (error) {
+                console.error('Error fetching records:', error);
+                showNotification('error', 'Error de Registros', 'No se pudieron cargar los datos del día.');
+            }
+        }
+
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            const submitBtn = document.getElementById('submit-btn');
+            if (submitBtn.disabled) return;
+
+            const form = document.getElementById('odometer-form');
+            const formData = new FormData(form);
+            const odometerValue = formData.get('odometer');
+            const imageFile = formData.get('image');
+
+            if (!selectedBusId || !odometerValue || !imageFile || imageFile.size === 0) {
+                showNotification('error', 'Campos incompletos', 'Asegúrese de seleccionar una PPU válida y completar todos los campos.');
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const selectedBus = allBuses.find(b => b.id === selectedBusId);
+                const fileName = `odometro_${selectedBus.ppu}_${Date.now()}.${imageFile.name.split('.').pop()}`;
+                
+                const { error: uploadError } = await supabaseClient.storage.from('odometro').upload(fileName, imageFile);
+                if (uploadError) throw uploadError;
+
+                const { data: urlData } = supabaseClient.storage.from('odometro').getPublicUrl(fileName);
+                
+                const now = new Date();
+                const recordData = {
+                    bus_id: selectedBusId,
+                    odometro: parseInt(odometerValue),
+                    imagen_url: urlData.publicUrl,
+                    analisis: formData.get('analysis'),
+                    fecha_registro: now.toISOString().slice(0, 10),
+                    hora_registro: now.toTimeString().slice(0, 8),
+                    latitud: userLocation?.lat,
+                    longitud: userLocation?.lon,
+                    ubicacion_terminal: document.getElementById('nearest-terminal')?.textContent.split(' (')[0]
+                };
+
+                const { error: insertError } = await supabaseClient.from('odometro_registros').insert([recordData]);
+                if (insertError) throw insertError;
+                
+                showNotification('success', 'Éxito', `Registro para PPU ${selectedBus.ppu} guardado.`);
+                form.reset();
+                document.getElementById('ppu-input').value = '';
+                selectedBusId = null;
+                resetPpuInputState();
+            } catch (error) {
+                console.error('Error al guardar:', error);
+                showNotification('error', 'Error al Guardar', error.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function setupRealtimeSubscriptions() {
+            supabaseClient.channel('public:odometro_registros')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'odometro_registros' }, async (payload) => {
+                    console.log('Cambio detectado:', payload);
+                    showNotification('info', 'Actualización en Tiempo Real', 'La información ha sido actualizada.');
+                    // CORRECCIÓN: Cargar en secuencia para evitar race conditions en tiempo real.
+                    await fetchBuses();
+                    await fetchRecords();
+                }).subscribe();
+        }
+        
+        // --- UI & RENDERIZADO ---
+        function renderRecordsTable(records) {
+            const recordsTableBody = document.getElementById('records-table-body');
+            if (!recordsTableBody) return;
+            recordsTableBody.innerHTML = records.length === 0 
+                ? `<tr><td colspan="5" class="text-center p-8 text-slate-500">Aún no hay registros para el día de hoy.</td></tr>`
+                : records.map(record => `
+                    <tr class="border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <td class="px-6 py-4 font-medium">${record.buses?.ppu || 'N/A'}</td>
+                        <td class="px-6 py-4">${record.odometro.toLocaleString('es-CL')} km</td>
+                        <td class="px-6 py-4">${record.hora_registro}</td>
+                        <td class="px-6 py-4">${record.ubicacion_terminal || 'N/A'}</td>
+                        <td class="px-6 py-4 text-center">
+                            <button class="view-image-btn p-1.5 text-slate-500 hover:text-sky-600" data-record-id="${record.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" /></svg>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            
+            recordsTableBody.querySelectorAll('.view-image-btn').forEach(btn => {
+                btn.addEventListener('click', () => openImageModal(btn.dataset.recordId));
+            });
+        }
+
+        function updatePendingList(searchTerm = '') {
+            const reviewedTodayIds = new Set(historicRecords.map(r => r.bus_id));
+            let pendingBuses = allBuses.filter(bus => !reviewedTodayIds.has(bus.id));
+            
+            if (searchTerm) {
+                pendingBuses = pendingBuses.filter(bus => bus.ppu.includes(searchTerm.toUpperCase()));
+            }
+            
+            document.getElementById('pending-count').textContent = pendingBuses.length;
+            const pendingListContainer = document.getElementById('pending-list-container');
+            if (!pendingListContainer) return;
+            pendingListContainer.innerHTML = pendingBuses.length === 0
+                ? `<div class="p-4 text-center text-sm text-slate-500">${searchTerm ? 'No hay coincidencias.' : '¡Toda la flota ha sido revisada!'}</div>`
+                : pendingBuses.map(bus => `
+                    <div class="p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer pending-bus-item" data-bus-id="${bus.id}">
+                        <p class="font-bold text-slate-800 dark:text-slate-100">${bus.ppu}</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Interno: ${bus.numero_interno} | ${bus.marca}</p>
+                    </div>
+                `).join('');
+            
+            document.querySelectorAll('.pending-bus-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const bus = allBuses.find(b => b.id == item.dataset.busId);
+                    if (bus) {
+                        document.getElementById('ppu-input').value = bus.ppu;
+                        selectBus(bus);
+                        if (window.innerWidth < 1024) toggleSidebar();
+                        document.getElementById('ppu-input').focus();
+                    }
+                });
+            });
+        }
+
+        function updateStatistics() {
+            const totalBusesCount = document.getElementById('total-buses-count');
+            const totalRecords = document.getElementById('total-records');
+            const avgOdometer = document.getElementById('avg-odometer');
+
+            if (totalBusesCount) totalBusesCount.textContent = allBuses.length;
+            if (totalRecords) totalRecords.textContent = historicRecords.length;
+            
+            if (avgOdometer) {
+                if (historicRecords.length > 0) {
+                    const sum = historicRecords.reduce((acc, r) => acc + r.odometro, 0);
+                    avgOdometer.textContent = Math.round(sum / historicRecords.length).toLocaleString('es-CL');
+                } else {
+                    avgOdometer.textContent = '0';
+                }
+            }
+        }
+
+        // --- LÓGICA DEL FORMULARIO ---
+        function handlePpuInput(e) {
+            const value = e.target.value.toUpperCase();
+            e.target.value = value;
+            resetPpuInputState();
+
+            if (value.length < 2) {
+                document.getElementById('autocomplete-list').classList.add('hidden');
+                return;
+            }
+
+            const matches = allBuses.filter(bus => bus.ppu.startsWith(value));
+            const autocompleteList = document.getElementById('autocomplete-list');
+            
+            if (matches.length > 0) {
+                autocompleteList.innerHTML = matches.map(bus => 
+                    `<div class="p-2 hover:bg-sky-100 dark:hover:bg-sky-800 cursor-pointer autocomplete-item" data-bus-id="${bus.id}">${bus.ppu}</div>`
+                ).join('');
+                autocompleteList.classList.remove('hidden');
+
+                document.querySelectorAll('.autocomplete-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const busId = item.dataset.busId;
+                        const bus = allBuses.find(b => b.id == busId);
+                        document.getElementById('ppu-input').value = bus.ppu;
+                        autocompleteList.classList.add('hidden');
+                        selectBus(bus);
+                    });
+                });
+            } else {
+                autocompleteList.classList.add('hidden');
+            }
+        }
+
+        function selectBus(bus) {
+            selectedBusId = bus.id;
+            const isReviewed = historicRecords.some(r => r.bus_id === bus.id);
+            const ppuAlert = document.getElementById('ppu-alert');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            if (isReviewed) {
+                const record = historicRecords.find(r => r.bus_id === bus.id);
+                ppuAlert.innerHTML = `<strong>¡Atención!</strong> Bus ya revisado hoy a las ${record.hora_registro}.`;
+                ppuAlert.className = 'mt-2 p-3 text-sm rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
+                submitBtn.disabled = true;
+            } else {
+                ppuAlert.innerHTML = `<strong>Bus Válido:</strong> ${bus.ppu} (Interno: ${bus.numero_interno}).`;
+                ppuAlert.className = 'mt-2 p-3 text-sm rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
+                submitBtn.disabled = false;
+                
+                const lastOdometerInfo = document.getElementById('last-odometer-info');
+                lastOdometerInfo.classList.add('hidden');
+            }
+            ppuAlert.classList.remove('hidden');
+        }
+
+        function resetPpuInputState() {
+            selectedBusId = null;
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('ppu-alert').classList.add('hidden');
+            document.getElementById('last-odometer-info').classList.add('hidden');
+        }
+
+        // --- MODALES Y NOTIFICACIONES ---
+        function openImageModal(recordId) {
+            const record = historicRecords.find(r => r.id == recordId);
+            if (!record) return;
+
+            const imageModal = document.getElementById('image-modal');
+            document.getElementById('modal-img').src = record.imagen_url;
+            document.getElementById('modal-details').innerHTML = `
+                <div class="flex justify-between"><span class="font-semibold text-slate-500 dark:text-slate-400">PPU:</span><span>${record.buses.ppu}</span></div>
+                <div class="flex justify-between"><span class="font-semibold text-slate-500 dark:text-slate-400">N° Interno:</span><span>${record.buses.numero_interno}</span></div>
+                <div class="flex justify-between"><span class="font-semibold text-slate-500 dark:text-slate-400">Odómetro:</span><span>${record.odometro.toLocaleString('es-CL')} km</span></div>
+                <div class="flex justify-between"><span class="font-semibold text-slate-500 dark:text-slate-400">Fecha:</span><span>${new Date(record.created_at).toLocaleDateString('es-CL')}</span></div>
+                <div class="flex justify-between"><span class="font-semibold text-slate-500 dark:text-slate-400">Hora:</span><span>${record.hora_registro}</span></div>
+                <div class="flex justify-between"><span class="font-semibold text-slate-500 dark:text-slate-400">Ubicación:</span><span>${record.ubicacion_terminal || 'N/A'}</span></div>
+                <div class="mt-4"><p class="font-semibold text-slate-500 dark:text-slate-400">Observaciones:</p><p class="mt-1 p-2 bg-slate-100 dark:bg-slate-800 rounded">${record.analisis || 'Sin observaciones.'}</p></div>
+            `;
+            imageModal.classList.remove('hidden');
+            imageModal.classList.add('opacity-100');
+        }
+
+        function showNotification(type, title, message) {
+            const notification = document.getElementById('notification');
+            const icons = {
+                success: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
+                error: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
+                info: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
+            };
+            const colors = {
+                success: 'bg-green-100 border-green-500 text-green-700 dark:bg-green-900/50 dark:border-green-700 dark:text-green-300',
+                error: 'bg-red-100 border-red-500 text-red-700 dark:bg-red-900/50 dark:border-red-700 dark:text-red-300',
+                info: 'bg-sky-100 border-sky-500 text-sky-700 dark:bg-sky-900/50 dark:border-sky-700 dark:text-sky-300'
+            };
+            notification.className = `p-4 rounded-lg shadow-lg border-l-4 flex space-x-3 transform translate-x-[120%] opacity-0 ${colors[type]}`;
+            notification.innerHTML = `<div>${icons[type]}</div><div><p class="font-bold">${title}</p><p class="text-sm">${message}</p></div>`;
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), 4000);
+        }
+
+        // --- UTILIDADES ---
+        function getGeolocation() {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
+                    document.getElementById('current-location').textContent = `${userLocation.lat.toFixed(4)}, ${userLocation.lon.toFixed(4)}`;
+                    findNearestTerminal();
+                },
+                () => {
+                    document.getElementById('current-location').textContent = 'Permisos denegados.';
+                    document.getElementById('nearest-terminal').textContent = 'N/A';
+                }
+            );
+        }
+        function updateDateTime() {
+            document.getElementById('current-datetime').textContent = new Date().toLocaleString('es-CL');
+        }
+        function findNearestTerminal() {
+            if (!userLocation) return;
+            const TERMINALES = [
+                { nombre: 'El Roble', lat: -33.4407119, lon: -70.7897360 },
+                { nombre: 'La Reina', lat: -33.4648451, lon: -70.5317928 },
+                { nombre: 'Maria Angelica', lat: -33.5177224, lon: -70.5564193 },
+                { nombre: 'El Descanso', lat: -33.4695150, lon: -70.7624348 }
+            ];
+            let closest = TERMINALES.reduce((prev, curr) => {
+                const dist = getDistance(userLocation.lat, userLocation.lon, curr.lat, curr.lon);
+                return (dist < prev.dist) ? { ...curr, dist } : prev;
+            }, { dist: Infinity });
+            document.getElementById('nearest-terminal').textContent = `${closest.nombre} (${closest.dist.toFixed(2)} km)`;
+        }
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+        function setLoading(isLoading) {
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = isLoading;
+            document.getElementById('submit-text').classList.toggle('hidden', isLoading);
+            document.getElementById('submit-loader').classList.toggle('hidden', !isLoading);
+        }
+        function downloadDataAsExcel() {
+            const dataToExport = historicRecords.map(r => ({
+                'PPU': r.buses?.ppu, 'N° Interno': r.buses?.numero_interno, 'Odómetro': r.odometro,
+                'Fecha': new Date(r.created_at).toLocaleDateString('es-CL'), 'Hora': r.hora_registro,
+                'Terminal': r.ubicacion_terminal, 'Análisis': r.analisis, 'URL Foto': r.imagen_url
+            }));
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
+            XLSX.writeFile(workbook, `Reporte_Odometros_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+            setupUI();
+        }
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('sidebar-hidden');
+            document.getElementById('sidebar-overlay').classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>
