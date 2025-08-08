@@ -1315,38 +1315,38 @@
         
         // --- RENDERIZADO DE INTERFAZ ---
         function updateDashboard() {
-            // Totales
-            const totalBuses = state.allBuses.length;
-            const completedToday = getCompletedTodayCount();
-            const pendingCount = totalBuses - completedToday;
-            
-            // Actualizar contadores
-            document.getElementById('total-buses-count').textContent = totalBuses;
-            document.getElementById('active-buses-count').textContent = totalBuses;
-            document.getElementById('completed-buses-count').textContent = completedToday;
-            document.getElementById('pending-buses-count').textContent = pendingCount;
-            document.getElementById('pending-percentage').textContent = Math.round((pendingCount / totalBuses) * 100) + '%';
-            document.getElementById('completed-percentage').textContent = Math.round((completedToday / totalBuses) * 100) + '%';
-            
-            // Calcular odómetro promedio
-            if (state.allRecords.length > 0) {
-                const sum = state.allRecords.reduce((acc, record) => acc + record.odometro, 0);
-                const avg = Math.round(sum / state.allRecords.length).toLocaleString('es-CL');
-                document.getElementById('average-odometer').textContent = avg + ' km';
-                document.getElementById('odometer-readings-count').textContent = state.allRecords.length;
-            } else {
-                document.getElementById('average-odometer').textContent = 'N/A';
-                document.getElementById('odometer-readings-count').textContent = '0';
-            }
-            
-            // Actividad reciente
-            renderRecentActivity();
-            
-            // Gráficos
-            initializeCharts();
-            updateDashboardCharts();
-        }
-        
+    // Totales
+    const totalBuses = state.allBuses.length;
+    const completedCount = getCompletedCount(); // CAMBIO AQUÍ - Usar la nueva función
+    const pendingCount = totalBuses - completedCount;
+    
+    // Actualizar contadores
+    document.getElementById('total-buses-count').textContent = totalBuses;
+    document.getElementById('active-buses-count').textContent = totalBuses;
+    document.getElementById('completed-buses-count').textContent = completedCount;
+    document.getElementById('pending-buses-count').textContent = pendingCount;
+    document.getElementById('pending-percentage').textContent = Math.round((pendingCount / totalBuses) * 100) + '%';
+    document.getElementById('completed-percentage').textContent = Math.round((completedCount / totalBuses) * 100) + '%';
+    
+    // Calcular odómetro promedio
+    if (state.allRecords.length > 0) {
+        const sum = state.allRecords.reduce((acc, record) => acc + record.odometro, 0);
+        const avg = Math.round(sum / state.allRecords.length).toLocaleString('es-CL');
+        document.getElementById('average-odometer').textContent = avg + ' km';
+        document.getElementById('odometer-readings-count').textContent = state.allRecords.length;
+    } else {
+        document.getElementById('average-odometer').textContent = 'N/A';
+        document.getElementById('odometer-readings-count').textContent = '0';
+    }
+    
+    // Actividad reciente
+    renderRecentActivity();
+    
+    // Gráficos
+    initializeCharts();
+    updateDashboardCharts();
+}
+
         function renderRecentActivity() {
             const tableBody = document.getElementById('recent-activity-table');
             
@@ -1384,85 +1384,87 @@
         }
         
         function renderFleetTable() {
-            const tableBody = document.getElementById('fleet-table');
-            
-            // Aplicar filtros
-            let filteredBuses = filterBuses();
-            
-            // Configurar paginación
-            state.pagination.fleet.total = filteredBuses.length;
-            const { page, limit } = state.pagination.fleet;
-            const start = (page - 1) * limit;
-            const end = start + limit;
-            const paginatedBuses = filteredBuses.slice(start, end);
-            
-            // Actualizar información de paginación
-            document.getElementById('pagination-start').textContent = filteredBuses.length > 0 ? start + 1 : 0;
-            document.getElementById('pagination-end').textContent = Math.min(end, filteredBuses.length);
-            document.getElementById('pagination-total').textContent = filteredBuses.length;
-            
-            // Habilitar/deshabilitar botones de paginación
-            document.getElementById('prev-page').disabled = page <= 1;
-            document.getElementById('next-page').disabled = end >= filteredBuses.length;
-            
-            if (filteredBuses.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="7" class="px-5 py-8 text-center text-slate-500 dark:text-slate-400">No se encontraron buses con los filtros seleccionados</td></tr>`;
-                return;
-            }
-            
-            // Obtener el último registro para cada bus
-            const lastRecords = {};
-            state.allRecords.forEach(record => {
-                if (!lastRecords[record.bus_id] || new Date(record.created_at) > new Date(lastRecords[record.bus_id].created_at)) {
-                    lastRecords[record.bus_id] = record;
-                }
-            });
-            
-            tableBody.innerHTML = paginatedBuses.map(bus => {
-                const lastRecord = lastRecords[bus.id];
-                const isPending = !isRevisadoHoy(bus.id);
-                
-                return `
-                    <tr class="table-row-hover">
-                        <td class="px-5 py-4">
-                            <div class="flex items-center">
-                                <span class="status-indicator ${isPending ? 'status-pending' : 'status-completed'}"></span>
-                                <span class="text-sm font-medium">${isPending ? 'Pendiente' : 'Completado'}</span>
-                            </div>
-                        </td>
-                        <td class="px-5 py-4 text-sm font-medium text-slate-900 dark:text-white">${bus.ppu}</td>
-                        <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${bus.numero_interno}</td>
-                        <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${bus.marca}</td>
-                        <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${lastRecord ? lastRecord.odometro.toLocaleString('es-CL') + ' km' : 'N/A'}</td>
-                        <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${lastRecord ? formatDate(lastRecord.created_at) : 'N/A'}</td>
-                        <td class="px-5 py-4">
-                            ${isPending ? 
-                                `<button class="register-btn px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-medium rounded-lg transition-colors" data-bus-id="${bus.id}">Registrar</button>` : 
-                                `<button class="view-record-btn px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors" data-record-id="${lastRecord?.id}">Ver Registro</button>`
-                            }
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-            
-            // Agregar eventos a los botones
-            tableBody.querySelectorAll('.register-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const busId = btn.dataset.busId;
-                    changeSection('register');
-                    selectBusById(busId);
-                });
-            });
-            
-            tableBody.querySelectorAll('.view-record-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const recordId = btn.dataset.recordId;
-                    if (recordId) {
-                        openImageModal(recordId);
-                    }
-                });
-            });
+    const tableBody = document.getElementById('fleet-table');
+    
+    // Aplicar filtros
+    let filteredBuses = filterBuses();
+    
+    // Configurar paginación
+    state.pagination.fleet.total = filteredBuses.length;
+    const { page, limit } = state.pagination.fleet;
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const paginatedBuses = filteredBuses.slice(start, end);
+    
+    // Actualizar información de paginación
+    document.getElementById('pagination-start').textContent = filteredBuses.length > 0 ? start + 1 : 0;
+    document.getElementById('pagination-end').textContent = Math.min(end, filteredBuses.length);
+    document.getElementById('pagination-total').textContent = filteredBuses.length;
+    
+    // Habilitar/deshabilitar botones de paginación
+    document.getElementById('prev-page').disabled = page <= 1;
+    document.getElementById('next-page').disabled = end >= filteredBuses.length;
+    
+    if (filteredBuses.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="7" class="px-5 py-8 text-center text-slate-500 dark:text-slate-400">No se encontraron buses con los filtros seleccionados</td></tr>`;
+        return;
+    }
+    
+    // Obtener el último registro para cada bus
+    const lastRecords = {};
+    state.allRecords.forEach(record => {
+        if (!lastRecords[record.bus_id] || new Date(record.created_at) > new Date(lastRecords[record.bus_id].created_at)) {
+            lastRecords[record.bus_id] = record;
         }
+    });
+    
+    tableBody.innerHTML = paginatedBuses.map(bus => {
+        const lastRecord = lastRecords[bus.id];
+        const isPending = !isRevisado(bus.id); // CAMBIO AQUÍ - Usar la nueva función
+        
+        return `
+            <tr class="table-row-hover">
+                <td class="px-5 py-4">
+                    <div class="flex items-center">
+                        <span class="status-indicator ${isPending ? 'status-pending' : 'status-completed'}"></span>
+                        <span class="text-sm font-medium">${isPending ? 'Pendiente' : 'Revisado'}</span>
+                    </div>
+                </td>
+                <td class="px-5 py-4 text-sm font-medium text-slate-900 dark:text-white">${bus.ppu}</td>
+                <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${bus.numero_interno}</td>
+                <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${bus.marca}</td>
+                <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${lastRecord ? lastRecord.odometro.toLocaleString('es-CL') + ' km' : 'N/A'}</td>
+                <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${lastRecord ? formatDate(lastRecord.created_at) : 'N/A'}</td>
+                <td class="px-5 py-4">
+                    ${isPending ? 
+                        `<button class="register-btn px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-medium rounded-lg transition-colors" data-bus-id="${bus.id}">Registrar</button>` : 
+                        `<button class="view-record-btn px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors" data-record-id="${lastRecord?.id}">Ver Registro</button>`
+                    }
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    // Agregar eventos a los botones
+    tableBody.querySelectorAll('.register-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const busId = btn.dataset.busId;
+            changeSection('register');
+            selectBusById(busId);
+        });
+    });
+    
+    tableBody.querySelectorAll('.view-record-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const recordId = btn.dataset.recordId;
+            if (recordId) {
+                openImageModal(recordId);
+            }
+        });
+    });
+}
+
+        
         
         function renderHistoryTable() {
             const tableBody = document.getElementById('history-table');
@@ -2270,11 +2272,27 @@
             document.getElementById('pending-count-badge').textContent = pendingCount;
             document.getElementById('mobile-pending-badge').textContent = pendingCount;
         }
+
+function getEstadoBus(busId) {
+    return isRevisado(busId) ? 'Revisado' : 'Pendiente';
+}
+
+        function isRevisado(busId) {
+    return state.allRecords.some(r => r.bus_id === busId);
+}
+
+        function getCompletedCount() {
+    // Obtiene todos los IDs únicos de buses que tienen al menos un registro
+    const busesConRegistro = new Set(state.allRecords.map(r => r.bus_id));
+    return busesConRegistro.size;
+}
+
         
         // --- FUNCIONES DE FILTRADO Y CONSULTA ---
-        function getPendingBuses() {
-            return state.allBuses.filter(bus => !isRevisadoHoy(bus.id));
-        }
+       function getPendingBuses() {
+ 
+    return state.allBuses.filter(bus => !isRevisado(bus.id));
+}
         
         function getCompletedTodayCount() {
             const today = new Date().toISOString().slice(0, 10);
@@ -2317,33 +2335,33 @@
             `;
         }
         
-        function filterBuses() {
-            const { status, terminal, brand, search } = state.filters.fleet;
-            
-            return state.allBuses.filter(bus => {
-                // Filtrar por estado
-                if (status === 'pending' && isRevisadoHoy(bus.id)) return false;
-                if (status === 'completed' && !isRevisadoHoy(bus.id)) return false;
-                
-                // Filtrar por marca
-                if (brand && bus.marca !== brand) return false;
-                
-                // Filtrar por terminal
-                if (terminal) {
-                    const lastRecord = getLastRecord(bus.id);
-                    if (!lastRecord || lastRecord.ubicacion_terminal !== terminal) return false;
-                }
-                
-                // Filtrar por búsqueda
-                if (search) {
-                    const searchLower = search.toLowerCase();
-                    return bus.ppu.toLowerCase().includes(searchLower) || 
-                           bus.numero_interno.toString().includes(searchLower);
-                }
-                
-                return true;
-            });
+      function filterBuses() {
+    const { status, terminal, brand, search } = state.filters.fleet;
+    
+    return state.allBuses.filter(bus => {
+        // Filtrar por estado
+        if (status === 'pending' && isRevisado(bus.id)) return false;
+        if (status === 'completed' && !isRevisado(bus.id)) return false;
+        
+        // Filtrar por marca
+        if (brand && bus.marca !== brand) return false;
+        
+        // Filtrar por terminal
+        if (terminal) {
+            const lastRecord = getLastRecord(bus.id);
+            if (!lastRecord || lastRecord.ubicacion_terminal !== terminal) return false;
         }
+        
+        // Filtrar por búsqueda
+        if (search) {
+            const searchLower = search.toLowerCase();
+            return bus.ppu.toLowerCase().includes(searchLower) || 
+                   bus.numero_interno.toString().includes(searchLower);
+        }
+        
+        return true;
+    });
+}
         
         function filterRecords() {
             const { dateRange, terminal, search, startDate, endDate } = state.filters.history;
@@ -2411,7 +2429,7 @@
             
             switch(range) {
                 case 'today':
-                    completedCount = getCompletedTodayCount();
+                     const completedCount = getCompletedCount(); 
                     break;
                 case 'week':
                     const weekStart = new Date();
