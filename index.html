@@ -2423,35 +2423,43 @@ function getEstadoBus(busId) {
             });
         }
         
-        function getFleetChartData(range) {
-            const totalBuses = state.allBuses.length;
-            let completedCount;
+       function getFleetChartData(range) {
+    const totalBuses = state.allBuses.length;
+    let completedCount;
+    
+    switch(range) {
+        case 'today':
+            // CORREGIDO: Asignar valor a la variable existente, no crear una nueva
+            completedCount = getCompletedCount(); 
+            break;
+        case 'week':
+            const weekStart = new Date();
+            weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+            weekStart.setHours(0, 0, 0, 0);
             
-            switch(range) {
-                case 'today':
-                     const completedCount = getCompletedCount(); 
-                    break;
-                case 'week':
-                    const weekStart = new Date();
-                    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-                    weekStart.setHours(0, 0, 0, 0);
-                    
-                    const weekRecords = state.allRecords.filter(r => new Date(r.created_at) >= weekStart);
-                    const uniqueBusIds = new Set(weekRecords.map(r => r.bus_id));
-                    completedCount = uniqueBusIds.size;
-                    break;
-                case 'month':
-                    const monthStart = new Date();
-                    monthStart.setDate(1);
-                    monthStart.setHours(0, 0, 0, 0);
-                    
-                    const monthRecords = state.allRecords.filter(r => new Date(r.created_at) >= monthStart);
-                    const uniqueMonthBusIds = new Set(monthRecords.map(r => r.bus_id));
-                    completedCount = uniqueMonthBusIds.size;
-                    break;
-                default:
-                    completedCount = getCompletedTodayCount();
-            }
+            const weekRecords = state.allRecords.filter(r => new Date(r.created_at) >= weekStart);
+            const uniqueBusIds = new Set(weekRecords.map(r => r.bus_id));
+            completedCount = uniqueBusIds.size;
+            break;
+        case 'month':
+            const monthStart = new Date();
+            monthStart.setDate(1);
+            monthStart.setHours(0, 0, 0, 0);
+            
+            const monthRecords = state.allRecords.filter(r => new Date(r.created_at) >= monthStart);
+            const uniqueMonthBusIds = new Set(monthRecords.map(r => r.bus_id));
+            completedCount = uniqueMonthBusIds.size;
+            break;
+        default:
+            // CORREGIDO: Usar la nueva función en lugar de getCompletedTodayCount
+            completedCount = getCompletedCount();
+    }
+    
+    return {
+        completed: completedCount,
+        pending: totalBuses - completedCount
+    };
+}
             
             return {
                 completed: completedCount,
