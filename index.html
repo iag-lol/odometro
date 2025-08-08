@@ -3,216 +3,1016 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Odómetros - Flota de Buses PRO</title>
+    <title>FleetPro | Sistema Avanzado de Control de Flota</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            950: '#082f49',
+                        },
+                        secondary: {
+                            400: '#fb923c',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                },
+            },
+        }
+    </script>
     
     <!-- Librerías Externas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/es.min.js"></script>
 
     <!-- Inter Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
+        /* Variables y estilos principales */
         :root {
-            --sidebar-width: 300px;
+            --sidebar-width: 280px;
+            --header-height: 64px;
+            --bottom-nav-height: 64px;
         }
+        
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9; /* slate-100 */
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
         }
+        
         .dark body {
-            background-color: #020617; /* slate-950 */
+            background-color: #0f172a;
         }
+        
+        /* Layout */
         .main-content {
-            transition: margin-left 0.3s ease-in-out;
+            transition: margin-left 0.3s ease-out;
         }
+        
         @media (min-width: 1024px) {
             .main-content {
                 margin-left: var(--sidebar-width);
             }
         }
+        
         .sidebar {
             width: var(--sidebar-width);
-            transition: transform 0.3s ease-in-out;
+            transition: all 0.3s ease-out;
         }
+        
         .sidebar-hidden {
             transform: translateX(-100%);
         }
+        
+        /* Animaciones y efectos */
         .loader {
-            border-top-color: #3b82f6; /* blue-500 */
+            border-top-color: #0ea5e9;
             animation: spinner 1.5s linear infinite;
         }
+        
         @keyframes spinner {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
         .notification {
-            transition: all 0.5s ease-in-out;
+            transition: all 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+            transform: translateX(150%);
+            opacity: 0;
         }
+        
         .notification.show {
-            transform: translateX(0) !important;
-            opacity: 1 !important;
+            transform: translateX(0);
+            opacity: 1;
         }
-        /* Estilos para scrollbar */
+        
+        /* Elementos de interfaz */
+        .gradient-card {
+            background: linear-gradient(135deg, #2563eb 0%, #0369a1 100%);
+        }
+        
+        .gradient-card-amber {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .gradient-card-emerald {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .gradient-card-rose {
+            background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%);
+        }
+        
+        .card-lift {
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+        }
+        
+        .card-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .dark .card-lift:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Scrollbar personalizado */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
             height: 6px;
         }
+        
         .custom-scrollbar::-webkit-scrollbar-track {
             background: transparent;
         }
+        
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #94a3b8; /* slate-400 */
+            background: #94a3b8;
             border-radius: 3px;
         }
+        
         .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #475569; /* slate-600 */
+            background: #475569;
+        }
+        
+        /* Animaciones para elementos */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Diseño para dispositivos móviles */
+        .mobile-nav {
+            height: var(--bottom-nav-height);
+            z-index: 50;
+        }
+        
+        .has-mobile-nav {
+            padding-bottom: var(--bottom-nav-height);
+        }
+        
+        .tab-button {
+            transition: color 0.2s, background 0.2s;
+        }
+        
+        .tab-active {
+            color: #0ea5e9;
+            background: radial-gradient(circle at center 10px, rgba(14, 165, 233, 0.2) 0%, rgba(14, 165, 233, 0) 70%);
+        }
+        
+        /* Glassmorphism para elementos */
+        .glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+        }
+        
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.8);
+        }
+        
+        /* Efectos de ripple para botones */
+        .ripple {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ripple:after {
+            content: "";
+            display: block;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+            background-repeat: no-repeat;
+            background-position: 50%;
+            transform: scale(10, 10);
+            opacity: 0;
+            transition: transform .5s, opacity 1s;
+        }
+        
+        .ripple:active:after {
+            transform: scale(0, 0);
+            opacity: .3;
+            transition: 0s;
+        }
+        
+        /* Estilo para tablas */
+        .table-row-hover {
+            transition: background-color 0.2s ease;
+        }
+        
+        .table-row-hover:hover {
+            background-color: rgba(14, 165, 233, 0.05);
+        }
+        
+        .dark .table-row-hover:hover {
+            background-color: rgba(14, 165, 233, 0.1);
+        }
+        
+        /* Filtros avanzados */
+        .filter-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .filter-expanded {
+            max-height: 500px;
+        }
+        
+        /* Indicadores de estado */
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-pending {
+            background-color: #f59e0b;
+            box-shadow: 0 0 0 rgba(245, 158, 11, 0.4);
+            animation: pulse 2s infinite;
+        }
+        
+        .status-completed {
+            background-color: #10b981;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 8px rgba(245, 158, 11, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+            }
+        }
+        
+        /* Modo foto para móviles */
+        .photo-mode {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            background-color: #000;
+            display: none;
+        }
+        
+        .photo-mode.active {
+            display: flex;
         }
     </style>
 </head>
-<body class="dark:text-slate-300">
+<body class="dark:text-slate-300 min-h-screen has-mobile-nav lg:has-mobile-nav-none">
 
-    <!-- Sidebar (Panel de Buses Pendientes) -->
-    <aside id="sidebar" class="sidebar bg-white dark:bg-slate-900 h-full fixed top-0 left-0 z-40 flex flex-col border-r border-gray-200 dark:border-slate-800 sidebar-hidden lg:transform-none">
-        <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-800 h-16">
-             <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-sky-600 dark:text-sky-400">
-                    <path d="M3.375 4.5C2.339 4.5 1.5 5.34 1.5 6.375V13.5h12V6.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM13.5 15h-12v2.625c0 1.035.84 1.875 1.875 1.875h.375a3 3 0 116 0h3a.75.75 0 00.75-.75V15z" /><path d="M8.25 19.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0zM15.75 6.75a.75.75 0 00-.75.75v11.25c0 .087.015.17.042.248a3 3 0 015.958.464c.853-.175 1.522-.935 1.464-1.883a18.659 18.659 0 00-3.732-10.104 1.837 1.837 0 00-1.47-.725H15.75z" /><path d="M19.5 19.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" />
+    <!-- Sidebar - Panel lateral -->
+    <aside id="sidebar" class="sidebar bg-white dark:bg-slate-900 fixed top-0 left-0 z-40 h-full flex flex-col border-r border-slate-200 dark:border-slate-800 shadow-lg sidebar-hidden lg:transform-none">
+        <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 h-16">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-br from-primary-500 to-primary-700 text-white p-2 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                        <path d="M3.375 4.5C2.339 4.5 1.5 5.34 1.5 6.375V13.5h12V6.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM13.5 15h-12v2.625c0 1.035.84 1.875 1.875 1.875h.375a3 3 0 116 0h3a.75.75 0 00.75-.75V15z" />
+                        <path d="M8.25 19.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0zM15.75 6.75a.75.75 0 00-.75.75v11.25c0 .087.015.17.042.248a3 3 0 015.958.464c.853-.175 1.522-.935 1.464-1.883a18.659 18.659 0 00-3.732-10.104 1.837 1.837 0 00-1.47-.725H15.75z" />
+                        <path d="M19.5 19.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" />
+                    </svg>
+                </div>
+                <span class="text-xl font-bold bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">FleetPro</span>
+            </div>
+            <button id="sidebar-close-btn" class="lg:hidden text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
-                <span class="ml-2 text-xl font-semibold">Control Odómetros</span>
+            </button>
+        </div>
+        
+        <!-- Menú de navegación -->
+        <nav class="flex-grow py-4 overflow-y-auto custom-scrollbar">
+            <div class="px-4 pb-3 mb-3 border-b border-slate-200 dark:border-slate-800">
+                <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">Panel de Control</p>
             </div>
-        </div>
-        <div class="p-4">
-            <h3 class="text-lg font-bold text-amber-600 dark:text-amber-500">Buses Pendientes Hoy (<span id="pending-count">0</span>)</h3>
-            <div class="relative mt-2">
-                <input type="text" id="pending-search" placeholder="Buscar PPU..." class="w-full p-2 pl-8 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+            <div class="space-y-1 px-3">
+                <a href="#dashboard" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
+                        <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198c.031-.028.061-.056.091-.086L12 5.43z" />
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#fleet" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path d="M3.375 4.5C2.339 4.5 1.5 5.34 1.5 6.375V13.5h12V6.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM13.5 15h-12v2.625c0 1.035.84 1.875 1.875 1.875h.375a3 3 0 116 0h3a.75.75 0 00.75-.75V15z" />
+                        <path d="M8.25 19.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0zM15.75 6.75a.75.75 0 00-.75.75v11.25c0 .087.015.17.042.248a3 3 0 015.958.464c.853-.175 1.522-.935 1.464-1.883a18.659 18.659 0 00-3.732-10.104 1.837 1.837 0 00-1.47-.725H15.75z" />
+                        <path d="M19.5 19.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" />
+                    </svg>
+                    <span>Flota Completa</span>
+                </a>
+                <a href="#pending" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Pendientes</span>
+                    <span id="pending-count-badge" class="ml-auto inline-flex items-center justify-center w-6 h-6 text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 rounded-full">0</span>
+                </a>
+                <a href="#register" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 16.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5zm0-4.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5zm0-4.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5zm-6 12a.75.75 0 01-.75-.75v-7.5a.75.75 0 011.5 0v7.5a.75.75 0 01-.75.75zm0-10.5a.75.75 0 01-.75-.75v-1.5a.75.75 0 111.5 0v1.5a.75.75 0 01-.75.75z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Nuevo Registro</span>
+                </a>
+                <a href="#history" class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M7.502 6h7.128A3.375 3.375 0 0118 9.375v9.375a3 3 0 003-3V6.108c0-1.505-1.125-2.811-2.664-2.94a48.972 48.972 0 00-.673-.05A3 3 0 0015 1.5h-1.5a3 3 0 00-2.663 1.618c-.225.015-.45.032-.673.05C8.662 3.295 7.554 4.542 7.502 6zM13.5 3A1.5 1.5 0 0012 4.5h4.5A1.5 1.5 0 0015 3h-1.5z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M3 9.375C3 8.339 3.84 7.5 4.875 7.5h9.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 013 20.625V9.375zM6 12a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V12zm2.25 0a.75.75 0 01.75-.75h3.75a.75.75 0 010 1.5H9a.75.75 0 01-.75-.75zM6 15a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V15zm2.25 0a.75.75 0 01.75-.75h3.75a.75.75 0 010 1.5H9a.75.75 0 01-.75-.75zM6 18a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V18zm2.25 0a.75.75 0 01.75-.75h3.75a.75.75 0 010 1.5H9a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Historial</span>
+                </a>
             </div>
-        </div>
-        <div id="pending-list-container" class="flex-grow overflow-y-auto custom-scrollbar px-4 space-y-2">
-            <!-- La lista de buses pendientes se renderizará aquí -->
-        </div>
-        <div class="p-4 border-t border-gray-200 dark:border-slate-800 text-xs text-gray-400">
-            <p>&copy; 2024 - Sistema de Gestión de Flota</p>
+            
+            <div class="px-4 mt-8 pb-3 mb-3 border-b border-slate-200 dark:border-slate-800">
+                <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">Terminales</p>
+            </div>
+            <div id="terminals-list" class="space-y-1 px-3">
+                <!-- Terminales se cargarán dinámicamente -->
+            </div>
+            
+            <div class="px-4 mt-8 pb-3 mb-3 border-b border-slate-200 dark:border-slate-800">
+                <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">Informes</p>
+            </div>
+            <div class="space-y-1 px-3">
+                <a href="#" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M2.25 13.5a8.25 8.25 0 018.25-8.25.75.75 0 01.75.75v6.75H18a.75.75 0 01.75.75 8.25 8.25 0 01-16.5 0z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M12.75 3a.75.75 0 01.75-.75 8.25 8.25 0 018.25 8.25.75.75 0 01-.75.75h-7.5a.75.75 0 01-.75-.75V3z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Resumen Mensual</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6zm4.5 7.5a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0v-2.25a.75.75 0 01.75-.75zm3.75-1.5a.75.75 0 00-1.5 0v4.5a.75.75 0 001.5 0V12zm2.25-3a.75.75 0 01.75.75v6.75a.75.75 0 01-1.5 0V9.75A.75.75 0 0113.5 9zm3.75-1.5a.75.75 0 00-1.5 0v9a.75.75 0 001.5 0v-9z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Rendimiento de Flota</span>
+                </a>
+            </div>
+        </nav>
+        
+        <div class="p-4 border-t border-slate-200 dark:border-slate-800">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-slate-600 dark:text-slate-300">
+                            <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-medium">Operador</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400" id="terminal-location">Cargando...</p>
+                    </div>
+                </div>
+                <button id="dark-mode-toggle" class="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all">
+                    <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 hidden">
+                        <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
+                    </svg>
+                    <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
         </div>
     </aside>
 
-    <div class="main-content">
-        <!-- Header Principal -->
-        <header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm sticky top-0 z-20 border-b border-gray-200 dark:border-slate-800">
+    <!-- Contenido principal -->
+    <div class="main-content min-h-screen">
+        <!-- Header -->
+        <header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-20 border-b border-slate-200 dark:border-slate-800">
             <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-                <button id="sidebar-toggle" class="lg:hidden p-2 rounded-md text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                </button>
-                <div class="flex-1"></div>
-                <div class="flex items-center space-x-4">
-                    <button id="dark-mode-toggle" class="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800">
-                        <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                        <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                <div class="flex items-center space-x-3">
+                    <button id="sidebar-toggle" class="lg:hidden p-2 rounded-md text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                        </svg>
                     </button>
-                    <div class="w-px h-8 bg-slate-200 dark:bg-slate-700"></div>
-                    <div class="text-right">
-                        <p class="font-semibold">Operador</p>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">En Terreno</p>
+                    <h1 id="page-title" class="text-xl font-bold">Dashboard</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="hidden md:flex items-center space-x-2 text-sm">
+                        <span class="text-slate-500 dark:text-slate-400">Fecha:</span>
+                        <span id="current-date" class="font-medium"></span>
                     </div>
+                    <div class="flex items-center space-x-2 text-sm">
+                        <span class="text-slate-500 dark:text-slate-400">Hora:</span>
+                        <span id="current-time" class="font-medium"></span>
+                    </div>
+                    <button id="download-excel-btn-full" class="hidden md:flex items-center space-x-2 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                            <path fill-rule="evenodd" d="M5.625 1.5H9a3.75 3.75 0 013.75 3.75v1.875c0 1.036.84 1.875 1.875 1.875H16.5a3.75 3.75 0 013.75 3.75v7.875c0 1.035-.84 1.875-1.875 1.875H5.625a1.875 1.875 0 01-1.875-1.875V3.375c0-1.036.84-1.875 1.875-1.875zM9.75 14.25a.75.75 0 000 1.5H15a.75.75 0 000-1.5H9.75z" clip-rule="evenodd" />
+                            <path d="M14.25 5.25a5.23 5.23 0 00-1.279-3.434 9.768 9.768 0 016.963 6.963A5.23 5.23 0 0016.5 7.5h-1.875a.375.375 0 01-.375-.375V5.25z" />
+                        </svg>
+                        <span class="text-sm font-medium">Exportar Excel</span>
+                    </button>
                 </div>
             </div>
         </header>
 
-        <!-- Contenido -->
-        <main class="p-4 sm:p-6 lg:p-8">
-            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                <div class="lg:col-span-2">
-                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-lg">
-                        <h2 class="text-2xl font-bold mb-6">Nuevo Registro</h2>
-                        <form id="odometer-form" class="space-y-6">
-                            <div class="relative">
-                                <label for="ppu-input" class="block text-sm font-medium mb-1">PPU del Bus</label>
-                                <input type="text" id="ppu-input" name="ppu" required placeholder="Digite PPU..." autocomplete="off" class="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500 uppercase placeholder:normal-case">
-                                <div id="autocomplete-list" class="absolute z-10 w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg mt-1 max-h-40 overflow-y-auto hidden shadow-lg"></div>
-                                <div id="ppu-alert" class="hidden mt-2 p-3 text-sm rounded-lg"></div>
+        <!-- Contenido de la página -->
+        <main class="px-4 py-6 sm:px-6 lg:px-8 pb-20">
+            <!-- Sección Dashboard -->
+            <section id="dashboard-section" class="fade-in space-y-6">
+                <!-- Tarjetas de estadísticas -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-md overflow-hidden card-lift">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 rounded-lg p-3 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
+                                        <path d="M3.375 4.5C2.339 4.5 1.5 5.34 1.5 6.375V13.5h12V6.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM13.5 15h-12v2.625c0 1.035.84 1.875 1.875 1.875h.375a3 3 0 116 0h3a.75.75 0 00.75-.75V15z" />
+                                        <path d="M8.25 19.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0zM15.75 6.75a.75.75 0 00-.75.75v11.25c0 .087.015.17.042.248a3 3 0 015.958.464c.853-.175 1.522-.935 1.464-1.883a18.659 18.659 0 00-3.732-10.104 1.837 1.837 0 00-1.47-.725H15.75z" />
+                                        <path d="M19.5 19.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" />
+                                    </svg>
+                                </div>
+                                <div class="ml-5">
+                                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Flota</p>
+                                    <p class="mt-1 text-3xl font-bold text-slate-900 dark:text-white" id="total-buses-count">...</p>
+                                </div>
                             </div>
-                            <div>
-                                <label for="odometer" class="block text-sm font-medium mb-1">Odómetro (km)</label>
-                                <input type="number" id="odometer" name="odometer" required placeholder="Ej: 125480" class="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500">
-                                <p id="last-odometer-info" class="text-xs text-slate-500 mt-1 hidden">Último registro: <span class="font-semibold"></span></p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-800 px-5 py-3">
+                            <div class="text-sm">
+                                <span class="font-medium text-slate-900 dark:text-white" id="active-buses-count">...</span>
+                                <span class="text-slate-500 dark:text-slate-400"> buses activos</span>
                             </div>
-                            <div>
-                                <label for="image-upload" class="block text-sm font-medium mb-1">Fotografía</label>
-                                <input type="file" id="image-upload" name="image" accept="image/*" required class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-sky-100 file:text-sky-700 hover:file:bg-sky-200 dark:file:bg-slate-700 dark:file:text-sky-300 dark:hover:file:bg-slate-600">
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-md overflow-hidden card-lift">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 rounded-lg p-3 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
+                                        <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-5">
+                                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Pendientes Hoy</p>
+                                    <p class="mt-1 text-3xl font-bold text-slate-900 dark:text-white" id="pending-buses-count">...</p>
+                                </div>
                             </div>
-                            <div>
-                                <label for="analysis" class="block text-sm font-medium mb-1">Análisis y Observaciones</label>
-                                <textarea id="analysis" name="analysis" rows="3" placeholder="Anotaciones..." class="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-sky-500"></textarea>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-800 px-5 py-3">
+                            <div class="text-sm">
+                                <span class="font-medium text-slate-900 dark:text-white" id="pending-percentage">...</span>
+                                <span class="text-slate-500 dark:text-slate-400"> del total de la flota</span>
                             </div>
-                            <div class="border-t dark:border-slate-700 pt-4 text-xs text-slate-500 dark:text-slate-400 space-y-1">
-                                <p><strong>Fecha y Hora:</strong> <span id="current-datetime">...</span></p>
-                                <p><strong>Ubicación:</strong> <span id="current-location">...</span></p>
-                                <p><strong>Terminal más cercana:</strong> <span id="nearest-terminal">...</span></p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-md overflow-hidden card-lift">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 rounded-lg p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
+                                        <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-5">
+                                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Completados Hoy</p>
+                                    <p class="mt-1 text-3xl font-bold text-slate-900 dark:text-white" id="completed-buses-count">...</p>
+                                </div>
                             </div>
-                            <div class="pt-3">
-                                <button type="submit" id="submit-btn" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-all flex items-center justify-center disabled:bg-slate-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed">
-                                    <span id="submit-text">Registrar Revisión</span>
-                                    <div id="submit-loader" class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-6 w-6 ml-3 hidden"></div>
-                                </button>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-800 px-5 py-3">
+                            <div class="text-sm">
+                                <span class="font-medium text-slate-900 dark:text-white" id="completed-percentage">...</span>
+                                <span class="text-slate-500 dark:text-slate-400"> completado hoy</span>
                             </div>
-                        </form>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-md overflow-hidden card-lift">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 rounded-lg p-3 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
+                                        <path fill-rule="evenodd" d="M10.5 3.798v5.02a3 3 0 01-.879 2.121l-2.377 2.377a9.845 9.845 0 015.091 1.013 8.315 8.315 0 005.713.636l.285-.071-3.954-3.955a3 3 0 01-.879-2.121v-5.02a23.614 23.614 0 00-3 0zm4.5.138a.75.75 0 00.093-1.495A24.837 24.837 0 0012 2.25a25.048 25.048 0 00-3.093.191A.75.75 0 009 3.936v4.882a1.5 1.5 0 01-.44 1.06l-6.293 6.294c-1.62 1.621-.903 4.475 1.471 4.88 2.686.46 5.447.698 8.262.698 2.816 0 5.576-.239 8.262-.697 2.373-.406 3.092-3.26 1.47-4.881L15.44 9.879A1.5 1.5 0 0115 8.818V3.936z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-5">
+                                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Promedio Odómetro</p>
+                                    <p class="mt-1 text-3xl font-bold text-slate-900 dark:text-white" id="average-odometer">...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-800 px-5 py-3">
+                            <div class="text-sm">
+                                <span class="text-slate-500 dark:text-slate-400">Basado en <span id="odometer-readings-count" class="font-medium text-slate-900 dark:text-white">...</span> lecturas</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="lg:col-span-3">
-                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-lg">
-                        <div class="flex flex-col md:flex-row justify-between items-center mb-4">
-                            <h2 class="text-2xl font-bold">Registros del Día</h2>
-                            <button id="download-excel-btn" class="mt-4 md:mt-0 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg shadow-md flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                                Descargar Excel
+
+                <!-- Gráficos de datos -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-md p-5">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Estado de Flota</h3>
+                            <select id="fleet-chart-range" class="text-sm bg-slate-100 dark:bg-slate-800 border-none rounded-lg px-3 py-2">
+                                <option value="today">Hoy</option>
+                                <option value="week">Esta Semana</option>
+                                <option value="month" selected>Este Mes</option>
+                            </select>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="fleet-status-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-md p-5">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Registros por Terminal</h3>
+                            <select id="terminal-chart-range" class="text-sm bg-slate-100 dark:bg-slate-800 border-none rounded-lg px-3 py-2">
+                                <option value="today">Hoy</option>
+                                <option value="week">Esta Semana</option>
+                                <option value="month" selected>Este Mes</option>
+                            </select>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="terminal-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de actividad reciente -->
+                <div class="bg-white dark:bg-slate-900 rounded-xl shadow-md">
+                    <div class="p-5 border-b border-slate-200 dark:border-slate-800">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Actividad Reciente</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-slate-50 dark:bg-slate-800">
+                                <tr>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">PPU</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Interno</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Odómetro</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Terminal</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Fecha/Hora</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-activity-table" class="divide-y divide-slate-200 dark:divide-slate-800">
+                                <!-- Los datos se cargarán dinámicamente -->
+                                <tr><td colspan="6" class="px-5 py-8 text-center text-slate-500 dark:text-slate-400">Cargando datos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="px-5 py-3 flex justify-center">
+                        <a href="#history" class="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 font-medium text-sm">Ver historial completo →</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección Flota Completa -->
+            <section id="fleet-section" class="hidden fade-in space-y-6">
+                <div class="bg-white dark:bg-slate-900 rounded-xl shadow-md">
+                    <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between space-y-4 sm:space-y-0 items-start sm:items-center">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Flota Completa</h3>
+                        <div class="flex space-x-2">
+                            <div class="relative">
+                                <input type="text" id="fleet-search" placeholder="Buscar PPU o interno..." class="w-full sm:w-64 pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">
+                                    <path fill-rule="evenodd" d="M10.5 3.75a6.75 6.75 0 100 13.5 6.75 6.75 0 000-13.5zM2.25 10.5a8.25 8.25 0 1114.59 5.28l4.69 4.69a.75.75 0 11-1.06 1.06l-4.69-4.69A8.25 8.25 0 012.25 10.5z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <button id="fleet-filter-toggle" class="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500 hover:text-primary-600 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                    <path fill-rule="evenodd" d="M3.792 2.938A49.069 49.069 0 0112 2.25c2.797 0 5.54.236 8.209.688a1.857 1.857 0 011.541 1.836v1.044a3 3 0 01-.879 2.121l-6.182 6.182a1.5 1.5 0 00-.439 1.061v2.927a3 3 0 01-1.658 2.684l-1.757.878A.75.75 0 019.75 21v-5.818a1.5 1.5 0 00-.44-1.06L3.13 7.938a3 3 0 01-.879-2.121V4.774c0-.897.64-1.683 1.542-1.836z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button id="download-excel-btn-fleet" class="p-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                    <path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v11.69l3.22-3.22a.75.75 0 111.06 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.22 3.22V3a.75.75 0 01.75-.75z" clip-rule="evenodd" />
+                                    <path d="M14.25 5.25a5.23 5.23 0 00-1.279-3.434 9.768 9.768 0 016.963 6.963A5.23 5.23 0 0016.5 7.5h-1.875a.375.375 0 01-.375-.375V5.25z" />
+                                </svg>
                             </button>
                         </div>
-                        <div class="overflow-x-auto custom-scrollbar">
-                            <table class="w-full text-sm text-left">
-                                <thead class="text-xs uppercase bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3">PPU</th>
-                                        <th scope="col" class="px-6 py-3">Odómetro</th>
-                                        <th scope="col" class="px-6 py-3">Hora</th>
-                                        <th scope="col" class="px-6 py-3">Ubicación</th>
-                                        <th scope="col" class="px-6 py-3 text-center">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="records-table-body"></tbody>
-                            </table>
+                    </div>
+                    
+                    <!-- Filtros avanzados -->
+                    <div id="fleet-filters" class="filter-container px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Estado</label>
+                                <select id="filter-status" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm">
+                                    <option value="">Todos</option>
+                                    <option value="pending">Pendientes</option>
+                                    <option value="completed">Completados</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Terminal</label>
+                                <select id="filter-terminal" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm">
+                                    <option value="">Todas</option>
+                                    <!-- Las opciones se cargarán dinámicamente -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Marca</label>
+                                <select id="filter-brand" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm">
+                                    <option value="">Todas</option>
+                                    <!-- Las opciones se cargarán dinámicamente -->
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button id="apply-fleet-filters" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors">Aplicar Filtros</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full">
+                            <thead class="bg-slate-50 dark:bg-slate-800">
+                                <tr>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Estado</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">PPU</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Interno</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Marca</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Último Odómetro</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Última Revisión</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fleet-table" class="divide-y divide-slate-200 dark:divide-slate-800">
+                                <!-- Los datos se cargarán dinámicamente -->
+                                <tr><td colspan="7" class="px-5 py-8 text-center text-slate-500 dark:text-slate-400">Cargando datos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Paginación -->
+                    <div id="fleet-pagination" class="px-5 py-4 flex justify-between items-center border-t border-slate-200 dark:border-slate-800">
+                        <div class="text-sm text-slate-500 dark:text-slate-400">
+                            Mostrando <span id="pagination-start">0</span> a <span id="pagination-end">0</span> de <span id="pagination-total">0</span> buses
+                        </div>
+                        <div class="flex space-x-2">
+                            <button id="prev-page" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                    <path fill-rule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button id="next-page" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                    <path fill-rule="evenodd" d="M16.28 11.47a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 01-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 011.06-1.06l7.5 7.5z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
+
+            <!-- Sección de Buses Pendientes -->
+            <section id="pending-section" class="hidden fade-in space-y-6">
+                <div class="bg-white dark:bg-slate-900 rounded-xl shadow-md">
+                    <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between space-y-4 sm:space-y-0 items-start sm:items-center">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Buses Pendientes de Revisión</h3>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Total: <span id="pending-section-count" class="font-medium">0</span> buses</p>
+                        </div>
+                        <div class="relative">
+                            <input type="text" id="pending-search-input" placeholder="Buscar PPU o interno..." class="w-full sm:w-64 pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">
+                                <path fill-rule="evenodd" d="M10.5 3.75a6.75 6.75 0 100 13.5 6.75 6.75 0 000-13.5zM2.25 10.5a8.25 8.25 0 1114.59 5.28l4.69 4.69a.75.75 0 11-1.06 1.06l-4.69-4.69A8.25 8.25 0 012.25 10.5z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-5" id="pending-cards-container">
+                        <!-- Las tarjetas se cargarán dinámicamente -->
+                        <div class="col-span-full text-center py-8 text-slate-500 dark:text-slate-400">Cargando buses pendientes...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección de Registro -->
+            <section id="register-section" class="hidden fade-in">
+                <div class="max-w-4xl mx-auto">
+                    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-md overflow-hidden">
+                        <div class="md:flex">
+                            <div class="md:w-1/2 p-6 md:p-8">
+                                <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">Nuevo Registro de Odómetro</h2>
+                                <form id="odometer-form" class="space-y-5">
+                                    <div>
+                                        <label for="ppu-input" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">PPU del Bus</label>
+                                        <div class="relative">
+                                            <input type="text" id="ppu-input" name="ppu" required placeholder="Ingrese PPU..." autocomplete="off" class="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 uppercase">
+                                            <div id="autocomplete-list" class="absolute z-10 w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg mt-1 max-h-40 overflow-y-auto hidden shadow-lg custom-scrollbar"></div>
+                                        </div>
+                                        <div id="ppu-alert" class="hidden mt-2 p-3 text-sm rounded-lg"></div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="odometer" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Odómetro (km)</label>
+                                        <input type="number" id="odometer" name="odometer" required placeholder="Ej: 125480" class="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                                        <p id="last-odometer-info" class="text-xs text-slate-500 dark:text-slate-400 mt-1 hidden">Último registro: <span class="font-semibold"></span></p>
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="analysis" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Observaciones</label>
+                                        <textarea id="analysis" name="analysis" rows="3" placeholder="Anotaciones sobre el estado del vehículo..." class="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"></textarea>
+                                    </div>
+                                    
+                                    <div class="border-t dark:border-slate-700 pt-4 text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                                        <p><strong>Fecha y Hora:</strong> <span id="current-datetime">...</span></p>
+                                        <p><strong>Ubicación:</strong> <span id="current-location">...</span></p>
+                                        <p><strong>Terminal más cercana:</strong> <span id="nearest-terminal">...</span></p>
+                                    </div>
+                                    
+                                    <div class="pt-3">
+                                        <button type="submit" id="submit-btn" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-all flex items-center justify-center disabled:bg-slate-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed">
+                                            <span id="submit-text">Registrar Revisión</span>
+                                            <div id="submit-loader" class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-6 w-6 ml-3 hidden"></div>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <div class="md:w-1/2 bg-gradient-to-br from-primary-600 to-primary-800 p-6 md:p-8 flex flex-col">
+                                <div class="flex-grow">
+                                    <h3 class="text-xl font-bold text-white mb-4">Tomar Fotografía</h3>
+                                    <p class="text-primary-100 mb-6">Capture una imagen clara del odómetro del vehículo.</p>
+                                    
+                                    <div class="relative bg-primary-700/50 rounded-lg overflow-hidden border-2 border-primary-300/30 mb-4 aspect-[4/3] flex items-center justify-center">
+                                        <div id="camera-placeholder" class="text-center p-4">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-16 h-16 mx-auto text-primary-300/70 mb-2">
+                                                <path d="M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z" />
+                                                <path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 01-3 3h-15a3 3 0 01-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 001.11-.71l.822-1.315a2.942 2.942 0 012.332-1.39zM6.75 12.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0zm12-1.5a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+                                            </svg>
+                                            <p class="text-primary-200">Haga clic para activar la cámara</p>
+                                        </div>
+                                        <img id="preview-image" class="absolute inset-0 w-full h-full object-cover hidden">
+                                        <video id="camera-feed" class="absolute inset-0 w-full h-full object-cover hidden"></video>
+                                    </div>
+                                    
+                                    <input type="file" id="image-upload" name="image" accept="image/*" required class="hidden">
+                                    
+                                    <div class="flex space-x-3">
+                                        <button type="button" id="camera-btn" class="flex-1 bg-white text-primary-700 font-bold py-2.5 px-4 rounded-lg shadow-md hover:bg-primary-50 transition-colors flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2">
+                                                <path d="M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z" />
+                                                <path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 01-3 3h-15a3 3 0 01-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 001.11-.71l.822-1.315a2.942 2.942 0 012.332-1.39zM6.75 12.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0zm12-1.5a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+                                            </svg>
+                                            <span>Usar Cámara</span>
+                                        </button>
+                                        <button type="button" id="upload-btn" class="flex-1 bg-primary-800 text-white font-bold py-2.5 px-4 rounded-lg shadow-md hover:bg-primary-900 transition-colors flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2">
+                                                <path fill-rule="evenodd" d="M11.47 2.47a.75.75 0 011.06 0l4.5 4.5a.75.75 0 01-1.06 1.06l-3.22-3.22V16.5a.75.75 0 01-1.5 0V4.81L8.03 8.03a.75.75 0 01-1.06-1.06l4.5-4.5zM3 15.75a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd" />
+                                            </svg>
+                                            <span>Subir Foto</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-8 text-primary-200 text-sm">
+                                    <p class="font-medium mb-2">Consejos para la foto:</p>
+                                    <ul class="space-y-1 list-disc pl-5">
+                                        <li>Asegúrese que los números sean claramente visibles</li>
+                                        <li>Evite reflejos en el panel</li>
+                                        <li>Mantenga el teléfono estable para evitar fotos borrosas</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección Historial -->
+            <section id="history-section" class="hidden fade-in space-y-6">
+                <div class="bg-white dark:bg-slate-900 rounded-xl shadow-md">
+                    <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between space-y-4 sm:space-y-0 items-start sm:items-center">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Historial de Registros</h3>
+                        <div class="flex space-x-2">
+                            <div class="relative">
+                                <input type="text" id="history-search" placeholder="Buscar PPU..." class="w-full sm:w-64 pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">
+                                    <path fill-rule="evenodd" d="M10.5 3.75a6.75 6.75 0 100 13.5 6.75 6.75 0 000-13.5zM2.25 10.5a8.25 8.25 0 1114.59 5.28l4.69 4.69a.75.75 0 11-1.06 1.06l-4.69-4.69A8.25 8.25 0 012.25 10.5z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <button id="history-filter-toggle" class="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500 hover:text-primary-600 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                    <path fill-rule="evenodd" d="M3.792 2.938A49.069 49.069 0 0112 2.25c2.797 0 5.54.236 8.209.688a1.857 1.857 0 011.541 1.836v1.044a3 3 0 01-.879 2.121l-6.182 6.182a1.5 1.5 0 00-.439 1.061v2.927a3 3 0 01-1.658 2.684l-1.757.878A.75.75 0 019.75 21v-5.818a1.5 1.5 0 00-.44-1.06L3.13 7.938a3 3 0 01-.879-2.121V4.774c0-.897.64-1.683 1.542-1.836z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button id="download-excel-btn-history" class="p-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                    <path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v11.69l3.22-3.22a.75.75 0 111.06 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.22 3.22V3a.75.75 0 01.75-.75z" clip-rule="evenodd" />
+                                    <path d="M14.25 5.25a5.23 5.23 0 00-1.279-3.434 9.768 9.768 0 016.963 6.963A5.23 5.23 0 0016.5 7.5h-1.875a.375.375 0 01-.375-.375V5.25z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filtros avanzados -->
+                    <div id="history-filters" class="filter-container px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Rango de Fechas</label>
+                                <select id="filter-date-range" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm">
+                                    <option value="today">Hoy</option>
+                                    <option value="yesterday">Ayer</option>
+                                    <option value="week">Esta Semana</option>
+                                    <option value="month" selected>Este Mes</option>
+                                    <option value="custom">Personalizado</option>
+                                </select>
+                            </div>
+                            <div id="custom-date-container" class="hidden">
+                                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Fecha Personalizada</label>
+                                <div class="flex space-x-2">
+                                    <input type="date" id="filter-date-start" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm">
+                                    <input type="date" id="filter-date-end" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Terminal</label>
+                                <select id="filter-history-terminal" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm">
+                                    <option value="">Todas</option>
+                                    <!-- Las opciones se cargarán dinámicamente -->
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button id="apply-history-filters" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors">Aplicar Filtros</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full">
+                            <thead class="bg-slate-50 dark:bg-slate-800">
+                                <tr>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">PPU</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Interno</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Odómetro</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Terminal</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Fecha</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Hora</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table" class="divide-y divide-slate-200 dark:divide-slate-800">
+                                <!-- Los datos se cargarán dinámicamente -->
+                                <tr><td colspan="7" class="px-5 py-8 text-center text-slate-500 dark:text-slate-400">Cargando datos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Paginación -->
+                    <div id="history-pagination" class="px-5 py-4 flex justify-between items-center border-t border-slate-200 dark:border-slate-800">
+                        <div class="text-sm text-slate-500 dark:text-slate-400">
+                            Mostrando <span id="history-pagination-start">0</span> a <span id="history-pagination-end">0</span> de <span id="history-pagination-total">0</span> registros
+                        </div>
+                        <div class="flex space-x-2">
+                            <button id="history-prev-page" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                    <path fill-rule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button id="history-next-page" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                    <path fill-rule="evenodd" d="M16.28 11.47a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 01-1.06-1.06L14.69 12 7.72 5.03a.75 0 011.06-1.06l7.5 7.5z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
+
+        <!-- Navegación móvil inferior -->
+        <nav class="mobile-nav fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 z-30 lg:hidden">
+            <div class="grid grid-cols-5 h-full">
+                <button data-section="dashboard" class="tab-button tab-active flex flex-col items-center justify-center py-2 space-y-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                        <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
+                        <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198c.031-.028.061-.056.091-.086L12 5.43z" />
+                    </svg>
+                    <span class="text-xs">Inicio</span>
+                </button>
+                <button data-section="fleet" class="tab-button flex flex-col items-center justify-center py-2 space-y-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                        <path d="M3.375 4.5C2.339 4.5 1.5 5.34 1.5 6.375V13.5h12V6.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM13.5 15h-12v2.625c0 1.035.84 1.875 1.875 1.875h.375a3 3 0 116 0h3a.75.75 0 00.75-.75V15z" />
+                        <path d="M8.25 19.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0zM15.75 6.75a.75.75 0 00-.75.75v11.25c0 .087.015.17.042.248a3 3 0 015.958.464c.853-.175 1.522-.935 1.464-1.883a18.659 18.659 0 00-3.732-10.104 1.837 1.837 0 00-1.47-.725H15.75z" />
+                        <path d="M19.5 19.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" />
+                    </svg>
+                    <span class="text-xs">Flota</span>
+                </button>
+                <button data-section="register" class="tab-button flex flex-col items-center justify-center">
+                    <div class="w-14 h-14 rounded-full bg-primary-600 flex items-center justify-center shadow-lg -mt-5 border-4 border-white dark:border-slate-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-white">
+                            <path fill-rule="evenodd" d="M12 3.75a.75.75 0 01.75.75v6.75h6.75a.75.75 0 010 1.5h-6.75v6.75a.75.75 0 01-1.5 0v-6.75H4.5a.75.75 0 010-1.5h6.75V4.5a.75.75 0 01.75-.75z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                </button>
+                <button data-section="pending" class="tab-button flex flex-col items-center justify-center py-2 space-y-1 relative">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                        <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="text-xs">Pendientes</span>
+                    <span id="mobile-pending-badge" class="absolute top-1 right-1/4 w-5 h-5 text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 rounded-full flex items-center justify-center">0</span>
+                </button>
+                <button data-section="history" class="tab-button flex flex-col items-center justify-center py-2 space-y-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                        <path fill-rule="evenodd" d="M7.502 6h7.128A3.375 3.375 0 0118 9.375v9.375a3 3 0 003-3V6.108c0-1.505-1.125-2.811-2.664-2.94a48.972 48.972 0 00-.673-.05A3 3 0 0015 1.5h-1.5a3 3 0 00-2.663 1.618c-.225.015-.45.032-.673.05C8.662 3.295 7.554 4.542 7.502 6zM13.5 3A1.5 1.5 0 0012 4.5h4.5A1.5 1.5 0 0015 3h-1.5z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M3 9.375C3 8.339 3.84 7.5 4.875 7.5h9.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 013 20.625V9.375zM6 12a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V12zm2.25 0a.75.75 0 01.75-.75h3.75a.75.75 0 010 1.5H9a.75.75 0 01-.75-.75zM6 15a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V15zm2.25 0a.75.75 0 01.75-.75h3.75a.75.75 0 010 1.5H9a.75.75 0 01-.75-.75zM6 18a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V18zm2.25 0a.75.75 0 01.75-.75h3.75a.75.75 0 010 1.5H9a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="text-xs">Historial</span>
+                </button>
+            </div>
+        </nav>
     </div>
 
     <!-- Overlay para sidebar en móvil -->
     <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden"></div>
     
     <!-- Notificación -->
-    <div id="notification" class="fixed top-5 right-5 w-full max-w-sm z-50 transform translate-x-[120%] opacity-0"></div>
+    <div id="notification" class="notification fixed top-5 right-5 w-full max-w-sm z-50"></div>
 
     <!-- Modal para ver la imagen -->
     <div id="image-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 hidden z-50 opacity-0 transition-opacity duration-300">
         <div class="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden">
             <div class="md:w-3/5 bg-black flex items-center justify-center">
-                 <img id="modal-img" src="" alt="Fotografía del Odómetro" class="max-w-full max-h-[50vh] md:max-h-[90vh] object-contain">
+                <img id="modal-img" src="" alt="Fotografía del Odómetro" class="max-w-full max-h-[50vh] md:max-h-[90vh] object-contain">
             </div>
             <div class="md:w-2/5 p-6 flex flex-col">
                 <div class="flex-grow space-y-4 overflow-y-auto custom-scrollbar pr-2">
-                    <h3 class="text-xl font-bold">Detalles del Registro</h3>
-                    <div id="modal-details" class="space-y-3 text-sm"></div>
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Detalles del Registro</h3>
+                        <span id="modal-ppu" class="px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium">PPU</span>
+                    </div>
+                    <div id="modal-details" class="space-y-4 text-sm">
+                        <!-- Los detalles se cargarán dinámicamente -->
+                    </div>
                 </div>
                 <div class="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
-                     <button id="close-modal-btn" class="w-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 font-bold py-2 px-4 rounded-lg">Cerrar</button>
+                    <button id="close-modal-btn" class="w-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 font-medium py-2 px-4 rounded-lg transition-colors">Cerrar</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modo foto para móviles -->
+    <div id="photo-mode" class="photo-mode">
+        <div class="flex flex-col h-full">
+            <div class="flex-grow relative">
+                <video id="mobile-camera-feed" class="absolute inset-0 w-full h-full object-cover"></video>
+                <img id="mobile-preview-image" class="absolute inset-0 w-full h-full object-contain hidden">
+            </div>
+            <div class="bg-black/80 p-4 flex justify-between items-center">
+                <button id="cancel-photo-btn" class="px-4 py-2 bg-slate-800 text-white rounded-lg">Cancelar</button>
+                <button id="take-photo-btn" class="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center">
+                    <div class="w-12 h-12 bg-white rounded-full"></div>
+                </button>
+                <button id="confirm-photo-btn" class="px-4 py-2 bg-primary-600 text-white rounded-lg hidden">Confirmar</button>
             </div>
         </div>
     </div>
@@ -223,380 +1023,1491 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjbXR4dnV1Y2p0dG5nY2F6Z2ZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA3MjUwMDEsImV4cCI6MjA1NjMwMTAwMX0.2WcIjMUEhSM6j9kYpbsYArQocZdHx86k7wXk-NyjIs0';
         const { createClient } = supabase;
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Terminales
+        const TERMINALES = [
+            { id: 1, nombre: 'El Roble', lat: -33.4407119, lon: -70.7897360 },
+            { id: 2, nombre: 'La Reina', lat: -33.4648451, lon: -70.5317928 },
+            { id: 3, nombre: 'Maria Angelica', lat: -33.5177224, lon: -70.5564193 },
+            { id: 4, nombre: 'El Descanso', lat: -33.4695150, lon: -70.7624348 }
+        ];
 
         // --- ESTADO DE LA APP ---
-        let userLocation = null, allBuses = [], historicRecords = [], selectedBusId = null;
+        const state = {
+            userLocation: null,
+            allBuses: [],
+            historicRecords: [],
+            allRecords: [],
+            selectedBusId: null,
+            currentSection: 'dashboard',
+            currentImage: null,
+            mediaStream: null,
+            pagination: {
+                fleet: { page: 1, limit: 10, total: 0 },
+                history: { page: 1, limit: 10, total: 0 }
+            },
+            filters: {
+                fleet: { status: '', terminal: '', brand: '', search: '' },
+                history: { dateRange: 'month', terminal: '', search: '', startDate: null, endDate: null }
+            },
+            filtersPanelOpen: { fleet: false, history: false },
+            charts: {}
+        };
         
         // --- INICIALIZACIÓN ---
         document.addEventListener('DOMContentLoaded', initialize);
 
         async function initialize() {
-            console.log("🚀 App v3.2 Estable Iniciada");
+            console.log("🚀 FleetPro v4.0 Iniciado");
             setupUI();
-            updateDateTime();
-            setInterval(updateDateTime, 60000);
+            setupDateTimeUpdates();
             getGeolocation();
-            // CORRECCIÓN: Cargar buses primero, luego los registros para evitar race condition.
-            await fetchBuses();
-            await fetchRecords();
             setupEventListeners();
+            renderTerminalsList();
+            
+            // Carga de datos
+            await Promise.all([
+                fetchBuses(),
+                fetchAllRecords()
+            ]);
+            
+            // Actualizar interfaz
+            updateDashboard();
+            updatePendingList();
+            renderFleetTable();
+            renderHistoryTable();
+            updateNavigationCount();
+            
+            // Configurar tiempo real
             setupRealtimeSubscriptions();
         }
 
         function setupUI() {
-            const isDark = localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            // Modo oscuro
+            const isDark = localStorage.theme === 'dark' || 
+                          (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
             document.documentElement.classList.toggle('dark', isDark);
             document.getElementById('light-icon').classList.toggle('hidden', isDark);
             document.getElementById('dark-icon').classList.toggle('hidden', !isDark);
+            
+            // Inicializar filtros de fecha
+            const today = new Date();
+            document.getElementById('filter-date-start').valueAsDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            document.getElementById('filter-date-end').valueAsDate = today;
+            
+            // Configurar selector de rango de fechas
+            document.getElementById('filter-date-range').addEventListener('change', function() {
+                document.getElementById('custom-date-container').classList.toggle('hidden', this.value !== 'custom');
+            });
         }
 
-        function setupEventListeners() {
-            document.getElementById('odometer-form').addEventListener('submit', handleFormSubmit);
-            document.getElementById('download-excel-btn').addEventListener('click', downloadDataAsExcel);
-            document.getElementById('close-modal-btn').addEventListener('click', () => document.getElementById('image-modal').classList.add('hidden', 'opacity-0'));
-            document.getElementById('image-modal').addEventListener('click', (e) => { if (e.target === document.getElementById('image-modal')) document.getElementById('close-modal-btn').click(); });
-            document.getElementById('dark-mode-toggle').addEventListener('click', toggleDarkMode);
-            document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
-            document.getElementById('sidebar-overlay').addEventListener('click', toggleSidebar);
-            document.getElementById('ppu-input').addEventListener('input', handlePpuInput);
-            document.getElementById('ppu-input').addEventListener('blur', () => setTimeout(() => document.getElementById('autocomplete-list').classList.add('hidden'), 200));
-            document.getElementById('ppu-input').addEventListener('focus', handlePpuInput);
-            document.getElementById('pending-search').addEventListener('input', (e) => updatePendingList(e.target.value));
-        }
-
-        // --- DATOS (SUPABASE) ---
-        async function fetchBuses() {
-            try {
-                const { data, error } = await supabaseClient.from('buses').select('id, ppu, numero_interno, marca').order('numero_interno');
-                if (error) throw error;
-                allBuses = data;
-                updateStatistics();
-            } catch (error) {
-                console.error('Error fetching buses:', error);
-                showNotification('error', 'Error de Flota', 'No se pudo cargar la lista de buses.');
-            }
-        }
-
-        async function fetchRecords() {
-            try {
-                const today = new Date().toISOString().slice(0, 10);
-                const { data, error } = await supabaseClient.from('odometro_registros').select(`*, buses (ppu, numero_interno)`).eq('fecha_registro', today).order('created_at', { ascending: false });
-                if (error) throw error;
-                historicRecords = data;
-                renderRecordsTable(data);
-                updatePendingList();
-                updateStatistics();
-            } catch (error) {
-                console.error('Error fetching records:', error);
-                showNotification('error', 'Error de Registros', 'No se pudieron cargar los datos del día.');
-            }
-        }
-
-        async function handleFormSubmit(event) {
-            event.preventDefault();
-            const submitBtn = document.getElementById('submit-btn');
-            if (submitBtn.disabled) return;
-
-            const form = document.getElementById('odometer-form');
-            const formData = new FormData(form);
-            const odometerValue = formData.get('odometer');
-            const imageFile = formData.get('image');
-
-            if (!selectedBusId || !odometerValue || !imageFile || imageFile.size === 0) {
-                showNotification('error', 'Campos incompletos', 'Asegúrese de seleccionar una PPU válida y completar todos los campos.');
-                return;
-            }
-
-            setLoading(true);
-            try {
-                const selectedBus = allBuses.find(b => b.id === selectedBusId);
-                const fileName = `odometro_${selectedBus.ppu}_${Date.now()}.${imageFile.name.split('.').pop()}`;
-                
-                const { error: uploadError } = await supabaseClient.storage.from('odometro').upload(fileName, imageFile);
-                if (uploadError) throw uploadError;
-
-                const { data: urlData } = supabaseClient.storage.from('odometro').getPublicUrl(fileName);
-                
+        function setupDateTimeUpdates() {
+            function updateDateTime() {
                 const now = new Date();
-                const recordData = {
-                    bus_id: selectedBusId,
-                    odometro: parseInt(odometerValue),
-                    imagen_url: urlData.publicUrl,
-                    analisis: formData.get('analysis'),
-                    fecha_registro: now.toISOString().slice(0, 10),
-                    hora_registro: now.toTimeString().slice(0, 8),
-                    latitud: userLocation?.lat,
-                    longitud: userLocation?.lon,
-                    ubicacion_terminal: document.getElementById('nearest-terminal')?.textContent.split(' (')[0]
-                };
-
-                const { error: insertError } = await supabaseClient.from('odometro_registros').insert([recordData]);
-                if (insertError) throw insertError;
-                
-                showNotification('success', 'Éxito', `Registro para PPU ${selectedBus.ppu} guardado.`);
-                form.reset();
-                document.getElementById('ppu-input').value = '';
-                selectedBusId = null;
-                resetPpuInputState();
-            } catch (error) {
-                console.error('Error al guardar:', error);
-                showNotification('error', 'Error al Guardar', error.message);
-            } finally {
-                setLoading(false);
+                document.getElementById('current-date').textContent = now.toLocaleDateString('es-CL');
+                document.getElementById('current-time').textContent = now.toLocaleTimeString('es-CL');
+                document.getElementById('current-datetime').textContent = now.toLocaleString('es-CL');
             }
+            
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+        }
+        
+        function setupEventListeners() {
+            // Navegación
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const section = e.currentTarget.getAttribute('href').replace('#', '');
+                    changeSection(section);
+                });
+            });
+            
+            // Navegación móvil
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const section = button.dataset.section;
+                    if (section) changeSection(section);
+                });
+            });
+            
+            // Toggle de Sidebar
+            document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
+            document.getElementById('sidebar-close-btn').addEventListener('click', toggleSidebar);
+            document.getElementById('sidebar-overlay').addEventListener('click', toggleSidebar);
+            
+            // Toggle de Modo Oscuro
+            document.getElementById('dark-mode-toggle').addEventListener('click', toggleDarkMode);
+            
+            // Botones de Excel
+            document.getElementById('download-excel-btn-full').addEventListener('click', downloadFullExcel);
+            document.getElementById('download-excel-btn-fleet').addEventListener('click', downloadFullExcel);
+            document.getElementById('download-excel-btn-history').addEventListener('click', downloadHistoryExcel);
+            
+            // Toggle de Filtros
+            document.getElementById('fleet-filter-toggle').addEventListener('click', () => toggleFilters('fleet'));
+            document.getElementById('history-filter-toggle').addEventListener('click', () => toggleFilters('history'));
+            
+            // Aplicar Filtros
+            document.getElementById('apply-fleet-filters').addEventListener('click', () => applyFilters('fleet'));
+            document.getElementById('apply-history-filters').addEventListener('click', () => applyFilters('history'));
+            
+            // Búsqueda
+            document.getElementById('fleet-search').addEventListener('input', (e) => {
+                state.filters.fleet.search = e.target.value;
+                renderFleetTable();
+            });
+            
+            document.getElementById('history-search').addEventListener('input', (e) => {
+                state.filters.history.search = e.target.value;
+                renderHistoryTable();
+            });
+            
+            document.getElementById('pending-search-input').addEventListener('input', (e) => {
+                updatePendingList(e.target.value);
+            });
+            
+            // Paginación
+            document.getElementById('prev-page').addEventListener('click', () => changePage('fleet', -1));
+            document.getElementById('next-page').addEventListener('click', () => changePage('fleet', 1));
+            document.getElementById('history-prev-page').addEventListener('click', () => changePage('history', -1));
+            document.getElementById('history-next-page').addEventListener('click', () => changePage('history', 1));
+            
+            // Cerrar Modal
+            document.getElementById('close-modal-btn').addEventListener('click', closeImageModal);
+            document.getElementById('image-modal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('image-modal')) closeImageModal();
+            });
+            
+            // Formulario de Registro
+            document.getElementById('odometer-form').addEventListener('submit', handleFormSubmit);
+            document.getElementById('ppu-input').addEventListener('input', handlePpuInput);
+            document.getElementById('ppu-input').addEventListener('blur', () => {
+                setTimeout(() => document.getElementById('autocomplete-list').classList.add('hidden'), 200);
+            });
+            document.getElementById('ppu-input').addEventListener('focus', handlePpuInput);
+            
+            // Cámara y Fotografía
+            document.getElementById('camera-btn').addEventListener('click', activateCamera);
+            document.getElementById('upload-btn').addEventListener('click', () => document.getElementById('image-upload').click());
+            document.getElementById('image-upload').addEventListener('change', handleImageUpload);
+            document.getElementById('camera-placeholder').addEventListener('click', activateCamera);
+            
+            // Gráficos
+            document.getElementById('fleet-chart-range').addEventListener('change', updateDashboardCharts);
+            document.getElementById('terminal-chart-range').addEventListener('change', updateDashboardCharts);
         }
 
         function setupRealtimeSubscriptions() {
             supabaseClient.channel('public:odometro_registros')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'odometro_registros' }, async (payload) => {
-                    console.log('Cambio detectado:', payload);
-                    showNotification('info', 'Actualización en Tiempo Real', 'La información ha sido actualizada.');
-                    // CORRECCIÓN: Cargar en secuencia para evitar race conditions en tiempo real.
-                    await fetchBuses();
-                    await fetchRecords();
+                    console.log('Cambio detectado en tiempo real:', payload.eventType);
+                    showNotification('info', 'Actualización', 'Los datos han sido actualizados en tiempo real');
+                    
+                    // Actualizar datos
+                    await fetchAllRecords();
+                    
+                    // Actualizar interfaz
+                    updateDashboard();
+                    updatePendingList();
+                    renderFleetTable();
+                    renderHistoryTable();
+                    updateNavigationCount();
                 }).subscribe();
         }
         
-        // --- UI & RENDERIZADO ---
-        function renderRecordsTable(records) {
-            const recordsTableBody = document.getElementById('records-table-body');
-            if (!recordsTableBody) return;
-            recordsTableBody.innerHTML = records.length === 0 
-                ? `<tr><td colspan="5" class="text-center p-8 text-slate-500">Aún no hay registros para el día de hoy.</td></tr>`
-                : records.map(record => `
-                    <tr class="border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                        <td class="px-6 py-4 font-medium">${record.buses?.ppu || 'N/A'}</td>
-                        <td class="px-6 py-4">${record.odometro.toLocaleString('es-CL')} km</td>
-                        <td class="px-6 py-4">${record.hora_registro}</td>
-                        <td class="px-6 py-4">${record.ubicacion_terminal || 'N/A'}</td>
-                        <td class="px-6 py-4 text-center">
-                            <button class="view-image-btn p-1.5 text-slate-500 hover:text-sky-600" data-record-id="${record.id}">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" /></svg>
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
+        // --- LÓGICA DE NAVEGACIÓN ---
+        function changeSection(section) {
+            // Ocultar todas las secciones
+            document.querySelectorAll('main > section').forEach(el => {
+                el.classList.add('hidden');
+            });
             
-            recordsTableBody.querySelectorAll('.view-image-btn').forEach(btn => {
+            // Mostrar la sección seleccionada
+            document.getElementById(`${section}-section`).classList.remove('hidden');
+            
+            // Actualizar la navegación
+            document.querySelectorAll('.nav-link').forEach(link => {
+                const isActive = link.getAttribute('href') === `#${section}`;
+                link.classList.toggle('bg-primary-50', isActive);
+                link.classList.toggle('dark:bg-primary-900/30', isActive);
+                link.classList.toggle('text-primary-700', isActive);
+                link.classList.toggle('dark:text-primary-300', isActive);
+                link.classList.toggle('text-slate-700', !isActive);
+                link.classList.toggle('dark:text-slate-300', !isActive);
+                link.classList.toggle('hover:bg-slate-100', !isActive);
+                link.classList.toggle('dark:hover:bg-slate-800', !isActive);
+            });
+            
+            // Actualizar navegación móvil
+            document.querySelectorAll('.tab-button').forEach(button => {
+                const isActive = button.dataset.section === section;
+                button.classList.toggle('tab-active', isActive);
+            });
+            
+            // Actualizar título de la página
+            const pageTitle = document.getElementById('page-title');
+            switch(section) {
+                case 'dashboard': pageTitle.textContent = 'Dashboard'; break;
+                case 'fleet': pageTitle.textContent = 'Flota Completa'; break;
+                case 'pending': pageTitle.textContent = 'Buses Pendientes'; break;
+                case 'register': pageTitle.textContent = 'Nuevo Registro'; break;
+                case 'history': pageTitle.textContent = 'Historial'; break;
+            }
+            
+            // Actualizar estado
+            state.currentSection = section;
+            
+            // Cerrar sidebar en móvil
+            if (window.innerWidth < 1024) {
+                document.getElementById('sidebar').classList.add('sidebar-hidden');
+                document.getElementById('sidebar-overlay').classList.add('hidden');
+            }
+            
+            // Si es la sección de registro, actualizar campos
+            if (section === 'register') {
+                getGeolocation();
+            }
+        }
+        
+        // --- OPERACIONES DE DATOS ---
+        async function fetchBuses() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('buses')
+                    .select('id, ppu, numero_interno, marca')
+                    .order('numero_interno');
+                
+                if (error) throw error;
+                state.allBuses = data;
+                
+                // Cargar marcas únicas para filtros
+                const brands = [...new Set(data.map(bus => bus.marca))].sort();
+                populateFilterOptions('filter-brand', brands);
+                
+                return data;
+            } catch (error) {
+                console.error('Error al cargar buses:', error);
+                showNotification('error', 'Error', 'No se pudo cargar la lista de buses');
+                return [];
+            }
+        }
+
+        async function fetchAllRecords() {
+            try {
+                // Cargar todos los registros para el análisis global
+                const { data, error } = await supabaseClient
+                    .from('odometro_registros')
+                    .select(`*, buses (ppu, numero_interno, marca)`)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                state.allRecords = data;
+                state.historicRecords = data;
+                
+                return data;
+            } catch (error) {
+                console.error('Error al cargar registros:', error);
+                showNotification('error', 'Error', 'No se pudieron cargar los registros históricos');
+                return [];
+            }
+        }
+        
+        // --- RENDERIZADO DE INTERFAZ ---
+        function updateDashboard() {
+            // Totales
+            const totalBuses = state.allBuses.length;
+            const completedToday = getCompletedTodayCount();
+            const pendingCount = totalBuses - completedToday;
+            
+            // Actualizar contadores
+            document.getElementById('total-buses-count').textContent = totalBuses;
+            document.getElementById('active-buses-count').textContent = totalBuses;
+            document.getElementById('completed-buses-count').textContent = completedToday;
+            document.getElementById('pending-buses-count').textContent = pendingCount;
+            document.getElementById('pending-percentage').textContent = Math.round((pendingCount / totalBuses) * 100) + '%';
+            document.getElementById('completed-percentage').textContent = Math.round((completedToday / totalBuses) * 100) + '%';
+            
+            // Calcular odómetro promedio
+            if (state.allRecords.length > 0) {
+                const sum = state.allRecords.reduce((acc, record) => acc + record.odometro, 0);
+                const avg = Math.round(sum / state.allRecords.length).toLocaleString('es-CL');
+                document.getElementById('average-odometer').textContent = avg + ' km';
+                document.getElementById('odometer-readings-count').textContent = state.allRecords.length;
+            } else {
+                document.getElementById('average-odometer').textContent = 'N/A';
+                document.getElementById('odometer-readings-count').textContent = '0';
+            }
+            
+            // Actividad reciente
+            renderRecentActivity();
+            
+            // Gráficos
+            initializeCharts();
+            updateDashboardCharts();
+        }
+        
+        function renderRecentActivity() {
+            const tableBody = document.getElementById('recent-activity-table');
+            
+            if (state.allRecords.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="px-5 py-8 text-center text-slate-500 dark:text-slate-400">No hay actividad reciente</td></tr>`;
+                return;
+            }
+            
+            const recentRecords = state.allRecords.slice(0, 5);
+            
+            tableBody.innerHTML = recentRecords.map(record => `
+                <tr class="table-row-hover">
+                    <td class="px-5 py-4 text-sm font-medium text-slate-900 dark:text-white">${record.buses?.ppu || 'N/A'}</td>
+                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${record.buses?.numero_interno || 'N/A'}</td>
+                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${record.odometro.toLocaleString('es-CL')} km</td>
+                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${record.ubicacion_terminal || 'N/A'}</td>
+                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">
+                        ${formatDate(record.created_at)} - ${record.hora_registro}
+                    </td>
+                    <td class="px-5 py-4 text-sm">
+                        <button class="view-image-btn p-1.5 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-slate-100 dark:hover:bg-slate-800" data-record-id="${record.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                                <path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Agregar eventos a los botones de visualización
+            tableBody.querySelectorAll('.view-image-btn').forEach(btn => {
                 btn.addEventListener('click', () => openImageModal(btn.dataset.recordId));
             });
         }
-
-        function updatePendingList(searchTerm = '') {
-            const reviewedTodayIds = new Set(historicRecords.map(r => r.bus_id));
-            let pendingBuses = allBuses.filter(bus => !reviewedTodayIds.has(bus.id));
+        
+        function renderFleetTable() {
+            const tableBody = document.getElementById('fleet-table');
             
-            if (searchTerm) {
-                pendingBuses = pendingBuses.filter(bus => bus.ppu.includes(searchTerm.toUpperCase()));
+            // Aplicar filtros
+            let filteredBuses = filterBuses();
+            
+            // Configurar paginación
+            state.pagination.fleet.total = filteredBuses.length;
+            const { page, limit } = state.pagination.fleet;
+            const start = (page - 1) * limit;
+            const end = start + limit;
+            const paginatedBuses = filteredBuses.slice(start, end);
+            
+            // Actualizar información de paginación
+            document.getElementById('pagination-start').textContent = filteredBuses.length > 0 ? start + 1 : 0;
+            document.getElementById('pagination-end').textContent = Math.min(end, filteredBuses.length);
+            document.getElementById('pagination-total').textContent = filteredBuses.length;
+            
+            // Habilitar/deshabilitar botones de paginación
+            document.getElementById('prev-page').disabled = page <= 1;
+            document.getElementById('next-page').disabled = end >= filteredBuses.length;
+            
+            if (filteredBuses.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="7" class="px-5 py-8 text-center text-slate-500 dark:text-slate-400">No se encontraron buses con los filtros seleccionados</td></tr>`;
+                return;
             }
             
-            document.getElementById('pending-count').textContent = pendingBuses.length;
-            const pendingListContainer = document.getElementById('pending-list-container');
-            if (!pendingListContainer) return;
-            pendingListContainer.innerHTML = pendingBuses.length === 0
-                ? `<div class="p-4 text-center text-sm text-slate-500">${searchTerm ? 'No hay coincidencias.' : '¡Toda la flota ha sido revisada!'}</div>`
-                : pendingBuses.map(bus => `
-                    <div class="p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer pending-bus-item" data-bus-id="${bus.id}">
-                        <p class="font-bold text-slate-800 dark:text-slate-100">${bus.ppu}</p>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Interno: ${bus.numero_interno} | ${bus.marca}</p>
-                    </div>
-                `).join('');
+            // Obtener el último registro para cada bus
+            const lastRecords = {};
+            state.allRecords.forEach(record => {
+                if (!lastRecords[record.bus_id] || new Date(record.created_at) > new Date(lastRecords[record.bus_id].created_at)) {
+                    lastRecords[record.bus_id] = record;
+                }
+            });
             
-            document.querySelectorAll('.pending-bus-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const bus = allBuses.find(b => b.id == item.dataset.busId);
-                    if (bus) {
-                        document.getElementById('ppu-input').value = bus.ppu;
-                        selectBus(bus);
-                        if (window.innerWidth < 1024) toggleSidebar();
-                        document.getElementById('ppu-input').focus();
+            tableBody.innerHTML = paginatedBuses.map(bus => {
+                const lastRecord = lastRecords[bus.id];
+                const isPending = !isRevisadoHoy(bus.id);
+                
+                return `
+                    <tr class="table-row-hover">
+                        <td class="px-5 py-4">
+                            <div class="flex items-center">
+                                <span class="status-indicator ${isPending ? 'status-pending' : 'status-completed'}"></span>
+                                <span class="text-sm font-medium">${isPending ? 'Pendiente' : 'Completado'}</span>
+                            </div>
+                        </td>
+                        <td class="px-5 py-4 text-sm font-medium text-slate-900 dark:text-white">${bus.ppu}</td>
+                        <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${bus.numero_interno}</td>
+                        <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${bus.marca}</td>
+                        <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${lastRecord ? lastRecord.odometro.toLocaleString('es-CL') + ' km' : 'N/A'}</td>
+                        <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${lastRecord ? formatDate(lastRecord.created_at) : 'N/A'}</td>
+                        <td class="px-5 py-4">
+                            ${isPending ? 
+                                `<button class="register-btn px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-medium rounded-lg transition-colors" data-bus-id="${bus.id}">Registrar</button>` : 
+                                `<button class="view-record-btn px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors" data-record-id="${lastRecord?.id}">Ver Registro</button>`
+                            }
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Agregar eventos a los botones
+            tableBody.querySelectorAll('.register-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const busId = btn.dataset.busId;
+                    changeSection('register');
+                    selectBusById(busId);
+                });
+            });
+            
+            tableBody.querySelectorAll('.view-record-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const recordId = btn.dataset.recordId;
+                    if (recordId) {
+                        openImageModal(recordId);
                     }
                 });
             });
         }
-
-        function updateStatistics() {
-            const totalBusesCount = document.getElementById('total-buses-count');
-            const totalRecords = document.getElementById('total-records');
-            const avgOdometer = document.getElementById('avg-odometer');
-
-            if (totalBusesCount) totalBusesCount.textContent = allBuses.length;
-            if (totalRecords) totalRecords.textContent = historicRecords.length;
+        
+        function renderHistoryTable() {
+            const tableBody = document.getElementById('history-table');
             
-            if (avgOdometer) {
-                if (historicRecords.length > 0) {
-                    const sum = historicRecords.reduce((acc, r) => acc + r.odometro, 0);
-                    avgOdometer.textContent = Math.round(sum / historicRecords.length).toLocaleString('es-CL');
-                } else {
-                    avgOdometer.textContent = '0';
-                }
+            // Aplicar filtros
+            let filteredRecords = filterRecords();
+            
+            // Configurar paginación
+            state.pagination.history.total = filteredRecords.length;
+            const { page, limit } = state.pagination.history;
+            const start = (page - 1) * limit;
+            const end = start + limit;
+            const paginatedRecords = filteredRecords.slice(start, end);
+            
+            // Actualizar información de paginación
+            document.getElementById('history-pagination-start').textContent = filteredRecords.length > 0 ? start + 1 : 0;
+            document.getElementById('history-pagination-end').textContent = Math.min(end, filteredRecords.length);
+            document.getElementById('history-pagination-total').textContent = filteredRecords.length;
+            
+            // Habilitar/deshabilitar botones de paginación
+            document.getElementById('history-prev-page').disabled = page <= 1;
+            document.getElementById('history-next-page').disabled = end >= filteredRecords.length;
+            
+            if (filteredRecords.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="7" class="px-5 py-8 text-center text-slate-500 dark:text-slate-400">No se encontraron registros con los filtros seleccionados</td></tr>`;
+                return;
             }
+            
+            tableBody.innerHTML = paginatedRecords.map(record => `
+                <tr class="table-row-hover">
+                    <td class="px-5 py-4 text-sm font-medium text-slate-900 dark:text-white">${record.buses?.ppu || 'N/A'}</td>
+                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${record.buses?.numero_interno || 'N/A'}</td>
+                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${record.odometro.toLocaleString('es-CL')} km</td>
+                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${record.ubicacion_terminal || 'N/A'}</td>
+                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${formatDate(record.created_at)}</td>
+                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${record.hora_registro}</td>
+                    <td class="px-5 py-4">
+                        <button class="view-image-btn p-1.5 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-slate-100 dark:hover:bg-slate-800" data-record-id="${record.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                                <path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Agregar eventos a los botones de visualización
+            tableBody.querySelectorAll('.view-image-btn').forEach(btn => {
+                btn.addEventListener('click', () => openImageModal(btn.dataset.recordId));
+            });
         }
-
-        // --- LÓGICA DEL FORMULARIO ---
+        
+        function updatePendingList(searchTerm = '') {
+            const pendingBuses = getPendingBuses();
+            const filteredPending = searchTerm 
+                ? pendingBuses.filter(bus => 
+                    bus.ppu.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                    bus.numero_interno.toString().includes(searchTerm))
+                : pendingBuses;
+            
+            // Actualizar contador en el sidebar
+            document.getElementById('pending-count-badge').textContent = pendingBuses.length;
+            document.getElementById('mobile-pending-badge').textContent = pendingBuses.length;
+            document.getElementById('pending-section-count').textContent = filteredPending.length;
+            
+            // Renderizar tarjetas de buses pendientes
+            const container = document.getElementById('pending-cards-container');
+            
+            if (filteredPending.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full p-10 text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-16 h-16 mx-auto text-emerald-500 mb-4">
+                            <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                        </svg>
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">¡Todos los buses revisados!</h3>
+                        <p class="text-slate-500 dark:text-slate-400">${searchTerm ? 'No hay buses pendientes que coincidan con tu búsqueda.' : 'No hay buses pendientes de revisión para el día de hoy.'}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filteredPending.map(bus => `
+                <div class="bg-white dark:bg-slate-900 rounded-xl shadow-md overflow-hidden border border-slate-200 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-700 transition-colors">
+                    <div class="p-5">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900 dark:text-white">${bus.ppu}</h3>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Interno: ${bus.numero_interno}</p>
+                            </div>
+                            <span class="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-xs font-medium flex items-center">
+                                <span class="status-indicator status-pending mr-1"></span>
+                                Pendiente
+                            </span>
+                        </div>
+                        <div class="mb-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-500 dark:text-slate-400">Marca:</span>
+                                <span class="font-medium text-slate-900 dark:text-white">${bus.marca}</span>
+                            </div>
+                            ${getLastOdometerInfo(bus.id)}
+                        </div>
+                        <button class="register-pending-btn w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 rounded-lg transition-colors" data-bus-id="${bus.id}">
+                            Registrar Ahora
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Agregar eventos a los botones de registro
+            container.querySelectorAll('.register-pending-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const busId = btn.dataset.busId;
+                    changeSection('register');
+                    selectBusById(busId);
+                });
+            });
+        }
+        
+        function renderTerminalsList() {
+            const terminalsList = document.getElementById('terminals-list');
+            terminalsList.innerHTML = TERMINALES.map(terminal => `
+                <a href="#" class="terminal-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                    </svg>
+                    <span>${terminal.nombre}</span>
+                </a>
+            `).join('');
+            
+            // Cargar opciones para filtros
+            populateFilterOptions('filter-terminal', TERMINALES.map(t => t.nombre));
+            populateFilterOptions('filter-history-terminal', TERMINALES.map(t => t.nombre));
+        }
+        
+        // --- LÓGICA DE FORMULARIO ---
         function handlePpuInput(e) {
             const value = e.target.value.toUpperCase();
             e.target.value = value;
             resetPpuInputState();
-
+            
             if (value.length < 2) {
                 document.getElementById('autocomplete-list').classList.add('hidden');
                 return;
             }
-
-            const matches = allBuses.filter(bus => bus.ppu.startsWith(value));
+            
+            const matches = state.allBuses.filter(bus => bus.ppu.startsWith(value));
             const autocompleteList = document.getElementById('autocomplete-list');
             
             if (matches.length > 0) {
                 autocompleteList.innerHTML = matches.map(bus => 
-                    `<div class="p-2 hover:bg-sky-100 dark:hover:bg-sky-800 cursor-pointer autocomplete-item" data-bus-id="${bus.id}">${bus.ppu}</div>`
+                    `<div class="p-3 hover:bg-primary-50 dark:hover:bg-primary-900/30 cursor-pointer autocomplete-item" data-bus-id="${bus.id}">${bus.ppu} - Interno: ${bus.numero_interno}</div>`
                 ).join('');
                 autocompleteList.classList.remove('hidden');
-
+                
                 document.querySelectorAll('.autocomplete-item').forEach(item => {
                     item.addEventListener('click', () => {
                         const busId = item.dataset.busId;
-                        const bus = allBuses.find(b => b.id == busId);
-                        document.getElementById('ppu-input').value = bus.ppu;
+                        selectBusById(busId);
                         autocompleteList.classList.add('hidden');
-                        selectBus(bus);
                     });
                 });
             } else {
                 autocompleteList.classList.add('hidden');
             }
         }
-
-        function selectBus(bus) {
-            selectedBusId = bus.id;
-            const isReviewed = historicRecords.some(r => r.bus_id === bus.id);
+        
+        function selectBusById(busId) {
+            const bus = state.allBuses.find(b => b.id == busId);
+            if (!bus) return;
+            
+            document.getElementById('ppu-input').value = bus.ppu;
+            state.selectedBusId = bus.id;
+            
+            const isReviewed = isRevisadoHoy(bus.id);
             const ppuAlert = document.getElementById('ppu-alert');
             const submitBtn = document.getElementById('submit-btn');
             
             if (isReviewed) {
-                const record = historicRecords.find(r => r.bus_id === bus.id);
-                ppuAlert.innerHTML = `<strong>¡Atención!</strong> Bus ya revisado hoy a las ${record.hora_registro}.`;
-                ppuAlert.className = 'mt-2 p-3 text-sm rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
+                const record = getTodayRecord(bus.id);
+                ppuAlert.innerHTML = `
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2 text-amber-500 dark:text-amber-400">
+                            <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+                        </svg>
+                        <span><strong>¡Atención!</strong> Bus ya revisado hoy a las ${record.hora_registro}.</span>
+                    </div>
+                `;
+                ppuAlert.className = 'mt-2 p-3 text-sm rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
                 submitBtn.disabled = true;
+                
+                // Mostrar último odómetro
+                const lastOdometerInfo = document.getElementById('last-odometer-info');
+                lastOdometerInfo.querySelector('span').textContent = `${record.odometro.toLocaleString('es-CL')} km (hoy)`;
+                lastOdometerInfo.classList.remove('hidden');
             } else {
-                ppuAlert.innerHTML = `<strong>Bus Válido:</strong> ${bus.ppu} (Interno: ${bus.numero_interno}).`;
-                ppuAlert.className = 'mt-2 p-3 text-sm rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
+                ppuAlert.innerHTML = `
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2 text-emerald-500 dark:text-emerald-400">
+                            <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                        </svg>
+                        <span><strong>Bus Válido:</strong> ${bus.ppu} (Interno: ${bus.numero_interno})</span>
+                    </div>
+                `;
+                ppuAlert.className = 'mt-2 p-3 text-sm rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300';
                 submitBtn.disabled = false;
                 
+                // Mostrar último odómetro si existe un registro previo
+                const lastRecord = getLastRecord(bus.id);
                 const lastOdometerInfo = document.getElementById('last-odometer-info');
-                lastOdometerInfo.classList.add('hidden');
+                
+                if (lastRecord) {
+                    lastOdometerInfo.querySelector('span').textContent = `${lastRecord.odometro.toLocaleString('es-CL')} km (${formatDate(lastRecord.created_at)})`;
+                    lastOdometerInfo.classList.remove('hidden');
+                } else {
+                    lastOdometerInfo.classList.add('hidden');
+                }
             }
+            
             ppuAlert.classList.remove('hidden');
         }
-
+        
         function resetPpuInputState() {
-            selectedBusId = null;
+            state.selectedBusId = null;
             document.getElementById('submit-btn').disabled = true;
             document.getElementById('ppu-alert').classList.add('hidden');
             document.getElementById('last-odometer-info').classList.add('hidden');
         }
-
+        
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-btn');
+            if (submitBtn.disabled) return;
+            
+            // Validar datos
+            if (!state.selectedBusId || !state.currentImage) {
+                showNotification('error', 'Datos Incompletos', 'Debe seleccionar un bus y capturar una imagen del odómetro');
+                return;
+            }
+            
+            const form = document.getElementById('odometer-form');
+            const formData = new FormData(form);
+            const odometerValue = formData.get('odometer');
+            
+            if (!odometerValue) {
+                showNotification('error', 'Datos Incompletos', 'Debe ingresar el valor del odómetro');
+                return;
+            }
+            
+            setLoading(true);
+            
+            try {
+                const selectedBus = state.allBuses.find(b => b.id === state.selectedBusId);
+                
+                // Procesar imagen
+                let imageBlob;
+                if (state.currentImage instanceof Blob) {
+                    imageBlob = state.currentImage;
+                } else {
+                    // Convertir data URL a Blob
+                    const response = await fetch(state.currentImage);
+                    imageBlob = await response.blob();
+                }
+                
+                // Crear un archivo con nombre único
+                const fileName = `odometro_${selectedBus.ppu}_${Date.now()}.${imageBlob.type.split('/')[1] || 'jpg'}`;
+                const file = new File([imageBlob], fileName, { type: imageBlob.type });
+                
+                // Subir imagen
+                const { error: uploadError } = await supabaseClient.storage
+                    .from('odometro')
+                    .upload(fileName, file);
+                
+                if (uploadError) throw uploadError;
+                
+                // Obtener URL pública
+                const { data: urlData } = supabaseClient.storage
+                    .from('odometro')
+                    .getPublicUrl(fileName);
+                
+                // Crear registro
+                const now = new Date();
+                const recordData = {
+                    bus_id: state.selectedBusId,
+                    odometro: parseInt(odometerValue),
+                    imagen_url: urlData.publicUrl,
+                    analisis: formData.get('analysis'),
+                    fecha_registro: now.toISOString().slice(0, 10),
+                    hora_registro: now.toTimeString().slice(0, 8),
+                    latitud: state.userLocation?.lat,
+                    longitud: state.userLocation?.lon,
+                    ubicacion_terminal: document.getElementById('nearest-terminal')?.textContent.split(' (')[0]
+                };
+                
+                const { error: insertError } = await supabaseClient
+                    .from('odometro_registros')
+                    .insert([recordData]);
+                
+                if (insertError) throw insertError;
+                
+                showNotification('success', 'Registro Exitoso', `Se ha registrado el odómetro para el bus ${selectedBus.ppu}`);
+                
+                // Limpiar formulario
+                form.reset();
+                resetPpuInputState();
+                clearImagePreview();
+                
+                // Si estamos en móvil, volver al dashboard
+                if (window.innerWidth < 768) {
+                    changeSection('dashboard');
+                }
+            } catch (error) {
+                console.error('Error al guardar registro:', error);
+                showNotification('error', 'Error al Guardar', error.message || 'No se pudo guardar el registro');
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        // --- MANEJO DE IMÁGENES ---
+        function activateCamera() {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                // Mostrar el feed de la cámara
+                document.getElementById('camera-feed').classList.remove('hidden');
+                document.getElementById('camera-placeholder').classList.add('hidden');
+                
+                // Solicitar permisos de cámara
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                    .then(stream => {
+                        state.mediaStream = stream;
+                        const videoElement = document.getElementById('camera-feed');
+                        videoElement.srcObject = stream;
+                        videoElement.play();
+                        
+                        // Agregar evento para tomar foto
+                        videoElement.addEventListener('click', captureImage);
+                    })
+                    .catch(error => {
+                        console.error('Error accediendo a la cámara:', error);
+                        showNotification('error', 'Error de Cámara', 'No se pudo acceder a la cámara');
+                        document.getElementById('camera-feed').classList.add('hidden');
+                        document.getElementById('camera-placeholder').classList.remove('hidden');
+                    });
+            } else {
+                showNotification('error', 'Cámara No Disponible', 'Su dispositivo no soporta acceso a la cámara');
+            }
+        }
+        
+        function captureImage() {
+            if (!state.mediaStream) return;
+            
+            const videoElement = document.getElementById('camera-feed');
+            const canvas = document.createElement('canvas');
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            
+            const context = canvas.getContext('2d');
+            context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            
+            // Obtener la imagen como data URL
+            const imageDataUrl = canvas.toDataURL('image/jpeg');
+            
+            // Mostrar la vista previa
+            const previewElement = document.getElementById('preview-image');
+            previewElement.src = imageDataUrl;
+            previewElement.classList.remove('hidden');
+            
+            // Ocultar el feed de la cámara
+            videoElement.classList.add('hidden');
+            
+            // Guardar la imagen
+            state.currentImage = imageDataUrl;
+            
+            // Detener la transmisión de la cámara
+            stopCamera();
+        }
+        
+        function stopCamera() {
+            if (state.mediaStream) {
+                state.mediaStream.getTracks().forEach(track => track.stop());
+                state.mediaStream = null;
+            }
+        }
+        
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imageDataUrl = event.target.result;
+                
+                // Mostrar la vista previa
+                const previewElement = document.getElementById('preview-image');
+                previewElement.src = imageDataUrl;
+                previewElement.classList.remove('hidden');
+                
+                // Ocultar el placeholder y el feed de la cámara
+                document.getElementById('camera-placeholder').classList.add('hidden');
+                document.getElementById('camera-feed').classList.add('hidden');
+                
+                // Guardar la imagen
+                state.currentImage = file;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function clearImagePreview() {
+            const previewElement = document.getElementById('preview-image');
+            previewElement.src = '';
+            previewElement.classList.add('hidden');
+            
+            document.getElementById('camera-placeholder').classList.remove('hidden');
+            document.getElementById('camera-feed').classList.add('hidden');
+            document.getElementById('image-upload').value = '';
+            
+            state.currentImage = null;
+            stopCamera();
+        }
+        
         // --- MODALES Y NOTIFICACIONES ---
         function openImageModal(recordId) {
-            const record = historicRecords.find(r => r.id == recordId);
+            const record = state.allRecords.find(r => r.id == recordId);
             if (!record) return;
-
+            
             const imageModal = document.getElementById('image-modal');
             document.getElementById('modal-img').src = record.imagen_url;
-            document.getElementById('modal-details').innerHTML = `
-                <div class="flex justify-between"><span class="font-semibold text-slate-500 dark:text-slate-400">PPU:</span><span>${record.buses.ppu}</span></div>
-                <div class="flex justify-between"><span class="font-semibold text-slate-500 dark:text-slate-400">N° Interno:</span><span>${record.buses.numero_interno}</span></div>
-                <div class="flex justify-between"><span class="font-semibold text-slate-500 dark:text-slate-400">Odómetro:</span><span>${record.odometro.toLocaleString('es-CL')} km</span></div>
-                <div class="flex justify-between"><span class="font-semibold text-slate-500 dark:text-slate-400">Fecha:</span><span>${new Date(record.created_at).toLocaleDateString('es-CL')}</span></div>
-                <div class="flex justify-between"><span class="font-semibold text-slate-500 dark:text-slate-400">Hora:</span><span>${record.hora_registro}</span></div>
-                <div class="flex justify-between"><span class="font-semibold text-slate-500 dark:text-slate-400">Ubicación:</span><span>${record.ubicacion_terminal || 'N/A'}</span></div>
-                <div class="mt-4"><p class="font-semibold text-slate-500 dark:text-slate-400">Observaciones:</p><p class="mt-1 p-2 bg-slate-100 dark:bg-slate-800 rounded">${record.analisis || 'Sin observaciones.'}</p></div>
+            document.getElementById('modal-ppu').textContent = record.buses?.ppu || 'N/A';
+            
+            const details = document.getElementById('modal-details');
+            details.innerHTML = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">N° Interno</p>
+                        <p class="font-medium text-slate-900 dark:text-white">${record.buses?.numero_interno || 'N/A'}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Marca</p>
+                        <p class="font-medium text-slate-900 dark:text-white">${record.buses?.marca || 'N/A'}</p>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Odómetro</p>
+                    <p class="text-xl font-bold text-slate-900 dark:text-white">${record.odometro.toLocaleString('es-CL')} km</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Fecha</p>
+                        <p class="font-medium text-slate-900 dark:text-white">${formatDate(record.created_at)}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Hora</p>
+                        <p class="font-medium text-slate-900 dark:text-white">${record.hora_registro}</p>
+                    </div>
+                </div>
+                
+                <div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Terminal</p>
+                    <p class="font-medium text-slate-900 dark:text-white">${record.ubicacion_terminal || 'N/A'}</p>
+                </div>
+                
+                <div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Observaciones</p>
+                    <div class="mt-1 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                        <p class="text-slate-700 dark:text-slate-300">${record.analisis || 'Sin observaciones.'}</p>
+                    </div>
+                </div>
             `;
+            
             imageModal.classList.remove('hidden');
-            imageModal.classList.add('opacity-100');
+            setTimeout(() => imageModal.classList.add('opacity-100'), 10);
         }
-
+        
+        function closeImageModal() {
+            const imageModal = document.getElementById('image-modal');
+            imageModal.classList.remove('opacity-100');
+            setTimeout(() => imageModal.classList.add('hidden'), 300);
+        }
+        
         function showNotification(type, title, message) {
             const notification = document.getElementById('notification');
             const icons = {
-                success: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
-                error: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
-                info: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
+                success: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" /></svg>',
+                error: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-1.72 6.97a.75.75 0 10-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 101.06 1.06L12 13.06l1.72 1.72a.75.75 0 101.06-1.06L13.06 12l1.72-1.72a.75.75 0 10-1.06-1.06L12 10.94l-1.72-1.72z" clip-rule="evenodd" /></svg>',
+                info: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" /></svg>'
             };
+            
             const colors = {
-                success: 'bg-green-100 border-green-500 text-green-700 dark:bg-green-900/50 dark:border-green-700 dark:text-green-300',
-                error: 'bg-red-100 border-red-500 text-red-700 dark:bg-red-900/50 dark:border-red-700 dark:text-red-300',
-                info: 'bg-sky-100 border-sky-500 text-sky-700 dark:bg-sky-900/50 dark:border-sky-700 dark:text-sky-300'
+                success: 'bg-emerald-100 border-emerald-500 text-emerald-700 dark:bg-emerald-900/50 dark:border-emerald-700 dark:text-emerald-300',
+                error: 'bg-rose-100 border-rose-500 text-rose-700 dark:bg-rose-900/50 dark:border-rose-700 dark:text-rose-300',
+                info: 'bg-primary-100 border-primary-500 text-primary-700 dark:bg-primary-900/50 dark:border-primary-700 dark:text-primary-300'
             };
-            notification.className = `p-4 rounded-lg shadow-lg border-l-4 flex space-x-3 transform translate-x-[120%] opacity-0 ${colors[type]}`;
-            notification.innerHTML = `<div>${icons[type]}</div><div><p class="font-bold">${title}</p><p class="text-sm">${message}</p></div>`;
+            
+            notification.className = `notification fixed top-5 right-5 w-full max-w-sm z-50 p-4 rounded-lg shadow-lg border-l-4 flex space-x-3 ${colors[type]}`;
+            
+            notification.innerHTML = `
+                <div>${icons[type]}</div>
+                <div>
+                    <p class="font-bold">${title}</p>
+                    <p class="text-sm">${message}</p>
+                </div>
+            `;
+            
             notification.classList.add('show');
-            setTimeout(() => notification.classList.remove('show'), 4000);
+            setTimeout(() => notification.classList.remove('show'), 5000);
         }
-
+        
+        // --- GRÁFICOS ---
+        function initializeCharts() {
+            // Destruir gráficos existentes
+            if (state.charts.fleetStatus) state.charts.fleetStatus.destroy();
+            if (state.charts.terminalChart) state.charts.terminalChart.destroy();
+            
+            // Configurar Chart.js para modo oscuro
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? '#cbd5e1' : '#334155';
+            const gridColor = isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.2)';
+            
+            Chart.defaults.color = textColor;
+            Chart.defaults.borderColor = gridColor;
+            
+            // Crear gráfico de estado de flota
+            const fleetStatusCtx = document.getElementById('fleet-status-chart').getContext('2d');
+            state.charts.fleetStatus = new Chart(fleetStatusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completados', 'Pendientes'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['#10b981', '#f59e0b'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Crear gráfico de registros por terminal
+            const terminalChartCtx = document.getElementById('terminal-chart').getContext('2d');
+            state.charts.terminalChart = new Chart(terminalChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: TERMINALES.map(t => t.nombre),
+                    datasets: [{
+                        label: 'Registros',
+                        data: [0, 0, 0, 0],
+                        backgroundColor: '#0ea5e9',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateDashboardCharts() {
+            // Obtener rango de fechas para gráficos
+            const fleetRange = document.getElementById('fleet-chart-range').value;
+            const terminalRange = document.getElementById('terminal-chart-range').value;
+            
+            // Actualizar gráfico de estado de flota
+            const fleetData = getFleetChartData(fleetRange);
+            state.charts.fleetStatus.data.datasets[0].data = [fleetData.completed, fleetData.pending];
+            state.charts.fleetStatus.update();
+            
+            // Actualizar gráfico de registros por terminal
+            const terminalData = getTerminalChartData(terminalRange);
+            state.charts.terminalChart.data.datasets[0].data = TERMINALES.map(t => 
+                terminalData[t.nombre] || 0
+            );
+            state.charts.terminalChart.update();
+        }
+        
         // --- UTILIDADES ---
         function getGeolocation() {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    userLocation = { lat: position.coords.latitude, lon: position.coords.longitude };
-                    document.getElementById('current-location').textContent = `${userLocation.lat.toFixed(4)}, ${userLocation.lon.toFixed(4)}`;
-                    findNearestTerminal();
-                },
-                () => {
-                    document.getElementById('current-location').textContent = 'Permisos denegados.';
-                    document.getElementById('nearest-terminal').textContent = 'N/A';
-                }
-            );
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        state.userLocation = { 
+                            lat: position.coords.latitude, 
+                            lon: position.coords.longitude 
+                        };
+                        
+                        document.getElementById('current-location').textContent = 
+                            `${state.userLocation.lat.toFixed(4)}, ${state.userLocation.lon.toFixed(4)}`;
+                        
+                        document.getElementById('terminal-location').textContent = findNearestTerminal();
+                    },
+                    (error) => {
+                        console.error('Error de geolocalización:', error);
+                        document.getElementById('current-location').textContent = 'Permisos denegados';
+                        document.getElementById('nearest-terminal').textContent = 'N/A';
+                        document.getElementById('terminal-location').textContent = 'Ubicación no disponible';
+                    }
+                );
+            } else {
+                document.getElementById('current-location').textContent = 'Geolocalización no soportada';
+                document.getElementById('nearest-terminal').textContent = 'N/A';
+                document.getElementById('terminal-location').textContent = 'Ubicación no disponible';
+            }
         }
-        function updateDateTime() {
-            document.getElementById('current-datetime').textContent = new Date().toLocaleString('es-CL');
-        }
+        
         function findNearestTerminal() {
-            if (!userLocation) return;
-            const TERMINALES = [
-                { nombre: 'El Roble', lat: -33.4407119, lon: -70.7897360 },
-                { nombre: 'La Reina', lat: -33.4648451, lon: -70.5317928 },
-                { nombre: 'Maria Angelica', lat: -33.5177224, lon: -70.5564193 },
-                { nombre: 'El Descanso', lat: -33.4695150, lon: -70.7624348 }
-            ];
+            if (!state.userLocation) return 'N/A';
+            
             let closest = TERMINALES.reduce((prev, curr) => {
-                const dist = getDistance(userLocation.lat, userLocation.lon, curr.lat, curr.lon);
+                const dist = getDistance(state.userLocation.lat, state.userLocation.lon, curr.lat, curr.lon);
                 return (dist < prev.dist) ? { ...curr, dist } : prev;
             }, { dist: Infinity });
-            document.getElementById('nearest-terminal').textContent = `${closest.nombre} (${closest.dist.toFixed(2)} km)`;
+            
+            document.getElementById('nearest-terminal').textContent = 
+                `${closest.nombre} (${closest.dist.toFixed(2)} km)`;
+            
+            return closest.nombre;
         }
+        
         function getDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371;
+            const R = 6371; // Radio de la Tierra en km
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
         }
+        
         function setLoading(isLoading) {
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = isLoading;
             document.getElementById('submit-text').classList.toggle('hidden', isLoading);
             document.getElementById('submit-loader').classList.toggle('hidden', !isLoading);
         }
-        function downloadDataAsExcel() {
-            const dataToExport = historicRecords.map(r => ({
-                'PPU': r.buses?.ppu, 'N° Interno': r.buses?.numero_interno, 'Odómetro': r.odometro,
-                'Fecha': new Date(r.created_at).toLocaleDateString('es-CL'), 'Hora': r.hora_registro,
-                'Terminal': r.ubicacion_terminal, 'Análisis': r.analisis, 'URL Foto': r.imagen_url
-            }));
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
-            XLSX.writeFile(workbook, `Reporte_Odometros_${new Date().toISOString().slice(0,10)}.xlsx`);
+        
+        function downloadFullExcel() {
+            // Preparar datos para Excel
+            const dataToExport = state.allBuses.map(bus => {
+                const lastRecord = getLastRecord(bus.id);
+                const isReviewed = isRevisadoHoy(bus.id);
+                
+                return {
+                    'PPU': bus.ppu,
+                    'N° Interno': bus.numero_interno,
+                    'Marca': bus.marca,
+                    'Estado': isReviewed ? 'Revisado' : 'Pendiente',
+                    'Último Odómetro': lastRecord ? lastRecord.odometro : 'N/A',
+                    'Última Revisión': lastRecord ? formatDate(lastRecord.created_at) : 'N/A'
+                };
+            });
+            
+            exportToExcel(dataToExport, `FleetPro_Flota_Completa_${formatDateForFilename(new Date())}`);
         }
+        
+        function downloadHistoryExcel() {
+            // Aplicar filtros actuales
+            const filteredRecords = filterRecords();
+            
+            // Preparar datos para Excel
+            const dataToExport = filteredRecords.map(record => ({
+                'PPU': record.buses?.ppu || 'N/A',
+                'N° Interno': record.buses?.numero_interno || 'N/A',
+                'Marca': record.buses?.marca || 'N/A',
+                'Odómetro': record.odometro,
+                'Fecha': formatDate(record.created_at),
+                'Hora': record.hora_registro,
+                'Terminal': record.ubicacion_terminal || 'N/A',
+                'Observaciones': record.analisis || '',
+                'URL Foto': record.imagen_url || ''
+            }));
+            
+            exportToExcel(dataToExport, `FleetPro_Historial_${formatDateForFilename(new Date())}`);
+        }
+        
+        function exportToExcel(data, filename) {
+            const worksheet = XLSX.utils.json_to_sheet(data);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Datos");
+            
+            // Ajustar ancho de columnas
+            const maxWidths = {};
+            
+            // Calcular ancho para cabeceras
+            for (const header of Object.keys(data[0])) {
+                maxWidths[header] = header.length;
+            }
+            
+            // Calcular ancho para datos
+            data.forEach(row => {
+                for (const [key, value] of Object.entries(row)) {
+                    const valueStr = String(value);
+                    if (valueStr.length > maxWidths[key]) {
+                        maxWidths[key] = valueStr.length;
+                    }
+                }
+            });
+            
+            // Aplicar anchos
+            worksheet['!cols'] = Object.values(maxWidths).map(width => ({ wch: width + 2 }));
+            
+            XLSX.writeFile(workbook, `${filename}.xlsx`);
+            
+            showNotification('success', 'Excel Generado', 'El archivo Excel ha sido generado correctamente');
+        }
+        
         function toggleDarkMode() {
             document.documentElement.classList.toggle('dark');
             localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-            setupUI();
+            
+            document.getElementById('light-icon').classList.toggle('hidden');
+            document.getElementById('dark-icon').classList.toggle('hidden');
+            
+            // Actualizar colores de los gráficos
+            updateDashboardCharts();
         }
+        
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('sidebar-hidden');
             document.getElementById('sidebar-overlay').classList.toggle('hidden');
+        }
+        
+        function toggleFilters(section) {
+            state.filtersPanelOpen[section] = !state.filtersPanelOpen[section];
+            const filtersElem = document.getElementById(`${section}-filters`);
+            filtersElem.classList.toggle('filter-expanded', state.filtersPanelOpen[section]);
+        }
+        
+        function applyFilters(section) {
+            if (section === 'fleet') {
+                state.filters.fleet.status = document.getElementById('filter-status').value;
+                state.filters.fleet.terminal = document.getElementById('filter-terminal').value;
+                state.filters.fleet.brand = document.getElementById('filter-brand').value;
+                
+                // Resetear paginación
+                state.pagination.fleet.page = 1;
+                
+                renderFleetTable();
+            } else if (section === 'history') {
+                state.filters.history.dateRange = document.getElementById('filter-date-range').value;
+                state.filters.history.terminal = document.getElementById('filter-history-terminal').value;
+                
+                if (state.filters.history.dateRange === 'custom') {
+                    state.filters.history.startDate = document.getElementById('filter-date-start').value;
+                    state.filters.history.endDate = document.getElementById('filter-date-end').value;
+                } else {
+                    state.filters.history.startDate = null;
+                    state.filters.history.endDate = null;
+                }
+                
+                // Resetear paginación
+                state.pagination.history.page = 1;
+                
+                renderHistoryTable();
+            }
+            
+            // Cerrar panel de filtros
+            document.getElementById(`${section}-filters`).classList.remove('filter-expanded');
+            state.filtersPanelOpen[section] = false;
+        }
+        
+        function changePage(section, direction) {
+            state.pagination[section].page += direction;
+            
+            if (section === 'fleet') {
+                renderFleetTable();
+            } else if (section === 'history') {
+                renderHistoryTable();
+            }
+        }
+        
+        function updateNavigationCount() {
+            const pendingCount = getPendingBuses().length;
+            document.getElementById('pending-count-badge').textContent = pendingCount;
+            document.getElementById('mobile-pending-badge').textContent = pendingCount;
+        }
+        
+        // --- FUNCIONES DE FILTRADO Y CONSULTA ---
+        function getPendingBuses() {
+            return state.allBuses.filter(bus => !isRevisadoHoy(bus.id));
+        }
+        
+        function getCompletedTodayCount() {
+            const today = new Date().toISOString().slice(0, 10);
+            const todayRecords = state.allRecords.filter(r => r.fecha_registro === today);
+            const uniqueBusIds = new Set(todayRecords.map(r => r.bus_id));
+            return uniqueBusIds.size;
+        }
+        
+        function isRevisadoHoy(busId) {
+            const today = new Date().toISOString().slice(0, 10);
+            return state.allRecords.some(r => r.bus_id === busId && r.fecha_registro === today);
+        }
+        
+        function getTodayRecord(busId) {
+            const today = new Date().toISOString().slice(0, 10);
+            return state.allRecords.find(r => r.bus_id === busId && r.fecha_registro === today);
+        }
+        
+        function getLastRecord(busId) {
+            const records = state.allRecords.filter(r => r.bus_id === busId);
+            return records.length > 0 
+                ? records.reduce((latest, record) => 
+                    new Date(record.created_at) > new Date(latest.created_at) ? record : latest, records[0])
+                : null;
+        }
+        
+        function getLastOdometerInfo(busId) {
+            const lastRecord = getLastRecord(busId);
+            if (!lastRecord) return '';
+            
+            return `
+                <div class="flex justify-between text-sm mt-2">
+                    <span class="text-slate-500 dark:text-slate-400">Último Odómetro:</span>
+                    <span class="font-medium text-slate-900 dark:text-white">${lastRecord.odometro.toLocaleString('es-CL')} km</span>
+                </div>
+                <div class="flex justify-between text-xs mt-1">
+                    <span class="text-slate-500 dark:text-slate-400">Fecha:</span>
+                    <span class="text-slate-600 dark:text-slate-400">${formatDate(lastRecord.created_at)}</span>
+                </div>
+            `;
+        }
+        
+        function filterBuses() {
+            const { status, terminal, brand, search } = state.filters.fleet;
+            
+            return state.allBuses.filter(bus => {
+                // Filtrar por estado
+                if (status === 'pending' && isRevisadoHoy(bus.id)) return false;
+                if (status === 'completed' && !isRevisadoHoy(bus.id)) return false;
+                
+                // Filtrar por marca
+                if (brand && bus.marca !== brand) return false;
+                
+                // Filtrar por terminal
+                if (terminal) {
+                    const lastRecord = getLastRecord(bus.id);
+                    if (!lastRecord || lastRecord.ubicacion_terminal !== terminal) return false;
+                }
+                
+                // Filtrar por búsqueda
+                if (search) {
+                    const searchLower = search.toLowerCase();
+                    return bus.ppu.toLowerCase().includes(searchLower) || 
+                           bus.numero_interno.toString().includes(searchLower);
+                }
+                
+                return true;
+            });
+        }
+        
+        function filterRecords() {
+            const { dateRange, terminal, search, startDate, endDate } = state.filters.history;
+            
+            return state.allRecords.filter(record => {
+                // Filtrar por rango de fechas
+                const recordDate = new Date(record.created_at);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                let startFilterDate, endFilterDate;
+                
+                switch(dateRange) {
+                    case 'today':
+                        if (recordDate < today) return false;
+                        break;
+                    case 'yesterday':
+                        const yesterday = new Date(today);
+                        yesterday.setDate(yesterday.getDate() - 1);
+                        startFilterDate = yesterday;
+                        endFilterDate = new Date(today);
+                        if (recordDate < startFilterDate || recordDate >= endFilterDate) return false;
+                        break;
+                    case 'week':
+                        const weekStart = new Date(today);
+                        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                        if (recordDate < weekStart) return false;
+                        break;
+                    case 'month':
+                        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                        if (recordDate < monthStart) return false;
+                        break;
+                    case 'custom':
+                        if (startDate) {
+                            startFilterDate = new Date(startDate);
+                            startFilterDate.setHours(0, 0, 0, 0);
+                            if (recordDate < startFilterDate) return false;
+                        }
+                        if (endDate) {
+                            endFilterDate = new Date(endDate);
+                            endFilterDate.setHours(23, 59, 59, 999);
+                            if (recordDate > endFilterDate) return false;
+                        }
+                        break;
+                }
+                
+                // Filtrar por terminal
+                if (terminal && record.ubicacion_terminal !== terminal) return false;
+                
+                // Filtrar por búsqueda
+                if (search) {
+                    const searchLower = search.toLowerCase();
+                    return record.buses?.ppu.toLowerCase().includes(searchLower) || 
+                           (record.buses?.numero_interno.toString().includes(searchLower)) ||
+                           (record.odometro.toString().includes(searchLower));
+                }
+                
+                return true;
+            });
+        }
+        
+        function getFleetChartData(range) {
+            const totalBuses = state.allBuses.length;
+            let completedCount;
+            
+            switch(range) {
+                case 'today':
+                    completedCount = getCompletedTodayCount();
+                    break;
+                case 'week':
+                    const weekStart = new Date();
+                    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                    weekStart.setHours(0, 0, 0, 0);
+                    
+                    const weekRecords = state.allRecords.filter(r => new Date(r.created_at) >= weekStart);
+                    const uniqueBusIds = new Set(weekRecords.map(r => r.bus_id));
+                    completedCount = uniqueBusIds.size;
+                    break;
+                case 'month':
+                    const monthStart = new Date();
+                    monthStart.setDate(1);
+                    monthStart.setHours(0, 0, 0, 0);
+                    
+                    const monthRecords = state.allRecords.filter(r => new Date(r.created_at) >= monthStart);
+                    const uniqueMonthBusIds = new Set(monthRecords.map(r => r.bus_id));
+                    completedCount = uniqueMonthBusIds.size;
+                    break;
+                default:
+                    completedCount = getCompletedTodayCount();
+            }
+            
+            return {
+                completed: completedCount,
+                pending: totalBuses - completedCount
+            };
+        }
+        
+        function getTerminalChartData(range) {
+            let filteredRecords;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            switch(range) {
+                case 'today':
+                    filteredRecords = state.allRecords.filter(r => new Date(r.created_at) >= today);
+                    break;
+                case 'week':
+                    const weekStart = new Date(today);
+                    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                    filteredRecords = state.allRecords.filter(r => new Date(r.created_at) >= weekStart);
+                    break;
+                case 'month':
+                    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                    filteredRecords = state.allRecords.filter(r => new Date(r.created_at) >= monthStart);
+                    break;
+                default:
+                    filteredRecords = state.allRecords;
+            }
+            
+            // Contar registros por terminal
+            const terminalCounts = {};
+            TERMINALES.forEach(terminal => {
+                terminalCounts[terminal.nombre] = 0;
+            });
+            
+            filteredRecords.forEach(record => {
+                if (record.ubicacion_terminal && terminalCounts.hasOwnProperty(record.ubicacion_terminal)) {
+                    terminalCounts[record.ubicacion_terminal]++;
+                }
+            });
+            
+            return terminalCounts;
+        }
+
+
+        // --- FUNCIONES DE FORMATO Y UTILIDADES ---
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleDateString('es-CL');
+        }
+        
+        function formatDateForFilename(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}${month}${day}`;
+        }
+        
+        function populateFilterOptions(selectId, options) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            
+            // Mantener la primera opción
+            const firstOption = select.options[0];
+            select.innerHTML = '';
+            select.appendChild(firstOption);
+            
+            // Agregar opciones
+            options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                optionElement.textContent = option;
+                select.appendChild(optionElement);
+            });
         }
     </script>
 </body>
