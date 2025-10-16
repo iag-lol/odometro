@@ -495,7 +495,7 @@
                                     </svg>
                                 </div>
                                 <div class="ml-5">
-                                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Pendientes Hoy</p>
+                                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Pendientes Totales</p>
                                     <p class="mt-1 text-3xl font-bold text-slate-900 dark:text-white" id="pending-buses-count">...</p>
                                 </div>
                             </div>
@@ -517,7 +517,7 @@
                                     </svg>
                                 </div>
                                 <div class="ml-5">
-                                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Completados Hoy</p>
+                                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Revisados Totales</p>
                                     <p class="mt-1 text-3xl font-bold text-slate-900 dark:text-white" id="completed-buses-count">...</p>
                                 </div>
                             </div>
@@ -525,7 +525,7 @@
                         <div class="bg-slate-50 dark:bg-slate-800 px-5 py-3">
                             <div class="text-sm">
                                 <span class="font-medium text-slate-900 dark:text-white" id="completed-percentage">...</span>
-                                <span class="text-slate-500 dark:text-slate-400"> completado hoy</span>
+                                <span class="text-slate-500 dark:text-slate-400"> con registro en la flota</span>
                             </div>
                         </div>
                     </div>
@@ -1038,6 +1038,7 @@
             allBuses: [],
             historicRecords: [],
             allRecords: [],
+            reviewedBusIds: new Set(),
             selectedBusId: null,
             currentSection: 'dashboard',
             currentImage: null,
@@ -1304,6 +1305,7 @@
                 if (error) throw error;
                 state.allRecords = data;
                 state.historicRecords = data;
+                updateReviewedBusIds();
                 
                 return data;
             } catch (error) {
@@ -1317,16 +1319,18 @@
         function updateDashboard() {
             // Totales
             const totalBuses = state.allBuses.length;
-            const completedToday = getCompletedTodayCount();
-            const pendingCount = totalBuses - completedToday;
+            const reviewedCount = state.reviewedBusIds ? state.reviewedBusIds.size : 0;
+            const pendingCount = totalBuses - reviewedCount;
+            const pendingPercentage = totalBuses ? Math.round((pendingCount / totalBuses) * 100) : 0;
+            const reviewedPercentage = totalBuses ? Math.round((reviewedCount / totalBuses) * 100) : 0;
             
             // Actualizar contadores
             document.getElementById('total-buses-count').textContent = totalBuses;
             document.getElementById('active-buses-count').textContent = totalBuses;
-            document.getElementById('completed-buses-count').textContent = completedToday;
+            document.getElementById('completed-buses-count').textContent = reviewedCount;
             document.getElementById('pending-buses-count').textContent = pendingCount;
-            document.getElementById('pending-percentage').textContent = Math.round((pendingCount / totalBuses) * 100) + '%';
-            document.getElementById('completed-percentage').textContent = Math.round((completedToday / totalBuses) * 100) + '%';
+            document.getElementById('pending-percentage').textContent = pendingPercentage + '%';
+            document.getElementById('completed-percentage').textContent = reviewedPercentage + '%';
             
             // Calcular odómetro promedio
             if (state.allRecords.length > 0) {
@@ -1420,14 +1424,16 @@
             
             tableBody.innerHTML = paginatedBuses.map(bus => {
                 const lastRecord = lastRecords[bus.id];
-                const isPending = !isRevisadoHoy(bus.id);
+                const isReviewed = hasHistoricRecord(bus.id);
+                const statusClass = isReviewed ? 'status-completed' : 'status-pending';
+                const statusLabel = isReviewed ? 'Revisado' : 'Pendiente';
                 
                 return `
                     <tr class="table-row-hover">
                         <td class="px-5 py-4">
                             <div class="flex items-center">
-                                <span class="status-indicator ${isPending ? 'status-pending' : 'status-completed'}"></span>
-                                <span class="text-sm font-medium">${isPending ? 'Pendiente' : 'Completado'}</span>
+                                <span class="status-indicator ${statusClass}"></span>
+                                <span class="text-sm font-medium">${statusLabel}</span>
                             </div>
                         </td>
                         <td class="px-5 py-4 text-sm font-medium text-slate-900 dark:text-white">${bus.ppu}</td>
@@ -1436,7 +1442,7 @@
                         <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${lastRecord ? lastRecord.odometro.toLocaleString('es-CL') + ' km' : 'N/A'}</td>
                         <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">${lastRecord ? formatDate(lastRecord.created_at) : 'N/A'}</td>
                         <td class="px-5 py-4">
-                            ${isPending ? 
+                            ${!isReviewed ? 
                                 `<button class="register-btn px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-medium rounded-lg transition-colors" data-bus-id="${bus.id}">Registrar</button>` : 
                                 `<button class="view-record-btn px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors" data-record-id="${lastRecord?.id}">Ver Registro</button>`
                             }
@@ -1539,7 +1545,7 @@
                             <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
                         </svg>
                         <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">¡Todos los buses revisados!</h3>
-                        <p class="text-slate-500 dark:text-slate-400">${searchTerm ? 'No hay buses pendientes que coincidan con tu búsqueda.' : 'No hay buses pendientes de revisión para el día de hoy.'}</p>
+                        <p class="text-slate-500 dark:text-slate-400">${searchTerm ? 'No hay buses pendientes que coincidan con tu búsqueda.' : 'No hay buses pendientes de revisión.'}</p>
                     </div>
                 `;
                 return;
@@ -2134,13 +2140,13 @@
             // Preparar datos para Excel
             const dataToExport = state.allBuses.map(bus => {
                 const lastRecord = getLastRecord(bus.id);
-                const isReviewed = isRevisadoHoy(bus.id);
+                const hasRecord = hasHistoricRecord(bus.id);
                 
                 return {
                     'PPU': bus.ppu,
                     'N° Interno': bus.numero_interno,
                     'Marca': bus.marca,
-                    'Estado': isReviewed ? 'Revisado' : 'Pendiente',
+                    'Estado': hasRecord ? 'Revisado' : 'Pendiente',
                     'Último Odómetro': lastRecord ? lastRecord.odometro : 'N/A',
                     'Última Revisión': lastRecord ? formatDate(lastRecord.created_at) : 'N/A'
                 };
@@ -2270,10 +2276,18 @@
             document.getElementById('pending-count-badge').textContent = pendingCount;
             document.getElementById('mobile-pending-badge').textContent = pendingCount;
         }
+
+        function updateReviewedBusIds() {
+            state.reviewedBusIds = new Set(state.allRecords.map(record => record.bus_id));
+        }
+
+        function hasHistoricRecord(busId) {
+            return state.reviewedBusIds ? state.reviewedBusIds.has(busId) : false;
+        }
         
         // --- FUNCIONES DE FILTRADO Y CONSULTA ---
         function getPendingBuses() {
-            return state.allBuses.filter(bus => !isRevisadoHoy(bus.id));
+            return state.allBuses.filter(bus => !hasHistoricRecord(bus.id));
         }
         
         function getCompletedTodayCount() {
@@ -2322,8 +2336,9 @@
             
             return state.allBuses.filter(bus => {
                 // Filtrar por estado
-                if (status === 'pending' && isRevisadoHoy(bus.id)) return false;
-                if (status === 'completed' && !isRevisadoHoy(bus.id)) return false;
+                const isReviewed = hasHistoricRecord(bus.id);
+                if (status === 'pending' && isReviewed) return false;
+                if (status === 'completed' && !isReviewed) return false;
                 
                 // Filtrar por marca
                 if (brand && bus.marca !== brand) return false;
